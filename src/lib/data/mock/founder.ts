@@ -5,7 +5,7 @@ export const MOCK_FOUNDER_STORY: FounderStoryContent = {
   subheadline: 'A journey from a single thread to a universe of quiet, slow-living creativity.',
   founderName: 'Naima',
   founderTitle: 'Founder & Creative Director',
-  portraitImage: { url: '/images/founder/naima-portrait.jpg', altText: 'Naima in her embroidery studio' },
+  portraitImage: { url: '/hilo/images/founder/naima-portrait.jpg', altText: 'Naima in her embroidery studio' },
   storyParagraphs: [
     'Hi, I’m Naima.',
     'What began with a simple thread slowly became a world of stitches, florals, quiet moments, and handmade stories.',
@@ -14,10 +14,10 @@ export const MOCK_FOUNDER_STORY: FounderStoryContent = {
     'Whether you have never held an embroidery needle before or are returning to creative craft, these kits are created for your peace of mind.'
   ],
   galleryImages: [
-    { url: '/images/founder/workspace-1.jpg', altText: 'Studio thread collection' },
-    { url: '/images/founder/workspace-2.jpg', altText: 'Hand drawing floral patterns' },
-    { url: '/images/founder/workspace-3.jpg', altText: 'Linen stitching detail' },
-    { url: '/images/founder/workspace-4.jpg', altText: 'Gift box packaging process' }
+    { url: '/hilo/images/founder/workspace-1.jpg', altText: 'Studio thread collection' },
+    { url: '/hilo/images/founder/workspace-2.jpg', altText: 'Hand drawing floral patterns' },
+    { url: '/hilo/images/founder/workspace-3.jpg', altText: 'Linen stitching detail' },
+    { url: '/hilo/images/founder/workspace-4.jpg', altText: 'Gift box packaging process' }
   ],
   quote: 'Beautiful things do not need to be rushed. Your first stitch is a gentle invitation to pause.'
 };

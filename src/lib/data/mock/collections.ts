@@ -6,7 +6,7 @@ export const MOCK_COLLECTIONS: Collection[] = [
     handle: 'diy-kits',
     title: 'DIY Embroidery Kits',
     description: 'Complete beginner-friendly embroidery kits with printed organic linen, premium threads, hoops, and step-by-step video lessons.',
-    image: { url: '/images/collections/diy-kits.jpg', altText: 'DIY Kits Collection' },
+    image: { url: '/hilo/images/collections/diy-kits.jpg', altText: 'DIY Kits Collection' },
     featuredProductHandles: ['blooming-roses', 'wildflower-meadow', 'moonlit-garden', 'lavender-dreams']
   },
   {
@@ -14,7 +14,7 @@ export const MOCK_COLLECTIONS: Collection[] = [
     handle: 'gift-experiences',
     title: 'Gift Experiences',
     description: 'Thoughtfully curated gift sets designed for birthdays, wellness pauses, bridesmaids, and heartfelt gestures.',
-    image: { url: '/images/collections/gift-experiences.jpg', altText: 'Gift Experiences Collection' },
+    image: { url: '/hilo/images/collections/gift-experiences.jpg', altText: 'Gift Experiences Collection' },
     featuredProductHandles: ['moonlit-garden', 'lavender-dreams']
   },
   {
@@ -22,7 +22,7 @@ export const MOCK_COLLECTIONS: Collection[] = [
     handle: 'accessories',
     title: 'Embroidery Accessories',
     description: 'Elevated brass scissors, enamel needle minders, linen travel pouches, and extra embroidery hoops.',
-    image: { url: '/images/collections/accessories.jpg', altText: 'Accessories Collection' },
+    image: { url: '/hilo/images/collections/accessories.jpg', altText: 'Accessories Collection' },
     featuredProductHandles: ['vintage-stork-scissors', 'golden-bee-needle-minder']
   }
 ];

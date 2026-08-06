@@ -13,8 +13,8 @@ export const MOCK_PRODUCTS: Product[] = [
     difficulty: 'Beginner',
     estimatedHours: 4,
     images: [
-      { url: '/images/products/blooming-roses-1.jpg', altText: 'Blooming Roses Completed Embroidery Hoop' },
-      { url: '/images/products/blooming-roses-2.jpg', altText: 'Blooming Roses Kit Unboxed Content' }
+      { url: '/hilo/images/products/blooming-roses-1.jpg', altText: 'Blooming Roses Completed Embroidery Hoop' },
+      { url: '/hilo/images/products/blooming-roses-2.jpg', altText: 'Blooming Roses Kit Unboxed Content' }
     ],
     collections: ['diy-kits', 'best-sellers'],
     tags: ['floral', 'beginner', 'popular', 'gift'],
@@ -49,7 +49,7 @@ export const MOCK_PRODUCTS: Product[] = [
     difficulty: 'Beginner',
     estimatedHours: 3.5,
     images: [
-      { url: '/images/products/wildflower-meadow-1.jpg', altText: 'Wildflower Meadow Hoop' }
+      { url: '/hilo/images/products/wildflower-meadow-1.jpg', altText: 'Wildflower Meadow Hoop' }
     ],
     collections: ['diy-kits', 'best-sellers'],
     tags: ['botanical', 'beginner', 'gift'],
@@ -80,7 +80,7 @@ export const MOCK_PRODUCTS: Product[] = [
     difficulty: 'Intermediate',
     estimatedHours: 6,
     images: [
-      { url: '/images/products/moonlit-garden-1.jpg', altText: 'Moonlit Garden Embroidery' }
+      { url: '/hilo/images/products/moonlit-garden-1.jpg', altText: 'Moonlit Garden Embroidery' }
     ],
     collections: ['diy-kits', 'best-sellers', 'gift-experiences'],
     tags: ['night-sky', 'gold-thread', 'luxury'],
@@ -111,7 +111,7 @@ export const MOCK_PRODUCTS: Product[] = [
     difficulty: 'Beginner',
     estimatedHours: 3,
     images: [
-      { url: '/images/products/lavender-dreams-1.jpg', altText: 'Lavender Dreams Kit' }
+      { url: '/hilo/images/products/lavender-dreams-1.jpg', altText: 'Lavender Dreams Kit' }
     ],
     collections: ['diy-kits', 'gift-experiences', 'best-sellers'],
     tags: ['wellness', 'lavender', 'relaxation'],
@@ -142,7 +142,7 @@ export const MOCK_PRODUCTS: Product[] = [
     difficulty: 'Beginner',
     estimatedHours: 0,
     images: [
-      { url: '/images/products/vintage-stork-scissors-1.jpg', altText: 'Vintage Stork Embroidery Scissors' }
+      { url: '/hilo/images/products/vintage-stork-scissors-1.jpg', altText: 'Vintage Stork Embroidery Scissors' }
     ],
     collections: ['accessories'],
     tags: ['tools', 'scissors', 'brass'],
@@ -170,7 +170,7 @@ export const MOCK_PRODUCTS: Product[] = [
     difficulty: 'Beginner',
     estimatedHours: 0,
     images: [
-      { url: '/images/products/golden-bee-needle-minder-1.jpg', altText: 'Golden Bee Magnetic Needle Minder' }
+      { url: '/hilo/images/products/golden-bee-needle-minder-1.jpg', altText: 'Golden Bee Magnetic Needle Minder' }
     ],
     collections: ['accessories'],
     tags: ['tools', 'minder', 'magnet'],
