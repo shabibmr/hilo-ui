@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-wine: #380B0C;
+  --color-deep-wine: #340A0A;
+  --color-gold: #B08D57;
+  --color-antique-gold: #C4A360;
+  --color-cream: #F8F5EF;
+  --color-sage: #A8B39A;
+
+  --font-display: var(--font-display), "Playfair Display", serif;
+  --font-accent: var(--font-accent), "Cormorant Garamond", serif;
+  --font-body: var(--font-body), "Inter", sans-serif;
+
+  --shadow-wine-sm: 0 4px 20px -4px rgba(56, 11, 12, 0.15);
+  --shadow-wine-lg: 0 8px 30px -8px rgba(56, 11, 12, 0.25);
+  --shadow-gold-glow: 0 0 24px 0 rgba(176, 141, 87, 0.35);
+}
+
+:root {
+  --background: #F8F5EF;
+  --foreground: #380B0C;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Utilities for Fluid Typography */
+.text-h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw + 1rem, 4.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.text-h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw + 1rem, 2.75rem);
+  line-height: 1.15;
+}
+
+.text-eyebrow {
+  font-family: var(--font-accent);
+  font-style: italic;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
