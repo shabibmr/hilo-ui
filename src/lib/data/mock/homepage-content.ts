@@ -32,7 +32,13 @@ export const MOCK_HOMEPAGE_CONTENT: HomepageContent = {
     headline: 'Meet the hands behind HILO ARTE.',
     bioSnippet: 'Hi, I’m Naima. What began with a simple thread slowly became a world of stitches, florals, quiet moments, and handmade stories.',
     ctaText: 'Read Our Story',
-    image: { url: '/images/founder/naima-portrait.jpg', altText: 'Naima in her embroidery studio' }
+    image: { url: '/images/founder/naima-portrait.jpg', altText: 'Naima in her embroidery studio' },
+    galleryImages: [
+      { url: '/images/founder/workspace-1.jpg', altText: 'Studio thread collection' },
+      { url: '/images/founder/workspace-2.jpg', altText: 'Hand drawing floral patterns' },
+      { url: '/images/founder/workspace-3.jpg', altText: 'Linen stitching detail' },
+      { url: '/images/founder/workspace-4.jpg', altText: 'Gift box packaging process' }
+    ]
   },
   kitContentsItems: [
     { id: 'kc-1', name: 'Printed Linen', description: 'Pre-printed water-soluble pattern', icon: 'FileText', image: { url: '/images/kit-contents/linen.jpg', altText: 'Printed Fabric' } },

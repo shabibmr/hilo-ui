@@ -102,6 +102,7 @@ export interface HomepageContent {
     bioSnippet: string;
     ctaText: string;
     image: ImageAsset;
+    galleryImages?: ImageAsset[];
   };
   kitContentsItems: {
     id: string;

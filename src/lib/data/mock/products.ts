@@ -142,7 +142,7 @@ export const MOCK_PRODUCTS: Product[] = [
     difficulty: 'Beginner',
     estimatedHours: 0,
     images: [
-      { url: '/images/products/blooming-roses-1.jpg', altText: 'Vintage Stork Scissors' }
+      { url: '/images/products/vintage-stork-scissors-1.jpg', altText: 'Vintage Stork Embroidery Scissors' }
     ],
     collections: ['accessories'],
     tags: ['tools', 'scissors', 'brass'],
@@ -170,7 +170,7 @@ export const MOCK_PRODUCTS: Product[] = [
     difficulty: 'Beginner',
     estimatedHours: 0,
     images: [
-      { url: '/images/products/blooming-roses-1.jpg', altText: 'Golden Bee Needle Minder' }
+      { url: '/images/products/golden-bee-needle-minder-1.jpg', altText: 'Golden Bee Magnetic Needle Minder' }
     ],
     collections: ['accessories'],
     tags: ['tools', 'minder', 'magnet'],

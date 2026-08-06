@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { contentRepository } from '@/lib/data/providers';
 import { Header } from '@/components/layout/header';
 import { PromoBar } from '@/components/layout/promo-bar';
@@ -37,6 +38,19 @@ export default async function FounderStoryPage() {
               &ldquo;{story.quote}&rdquo;
             </blockquote>
           </div>
+
+          {story.galleryImages && story.galleryImages.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-12">
+              {story.galleryImages.map((img) => (
+                <div
+                  key={img.url}
+                  className="relative aspect-square rounded-xl overflow-hidden border border-wine/10"
+                >
+                  <Image src={img.url} alt={img.altText} fill className="object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
         </Container>
       </main>
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Section } from '../common/section';
 import { Container } from '../common/container';
 import { SectionHeading } from '../common/section-heading';
@@ -38,9 +39,24 @@ export const KitContentsSection: React.FC<KitContentsSectionProps> = ({ items })
               key={item.id}
               className="bg-white p-6 rounded-xl border border-wine/10 flex items-start gap-4 hover:border-gold/50 transition-colors"
             >
-              <div className="w-10 h-10 rounded-lg bg-wine/5 flex items-center justify-center flex-shrink-0">
-                {iconMap[item.icon] || <FileText className="w-5 h-5 text-gold" />}
-              </div>
+              {item.image?.url ? (
+                <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-wine/5">
+                  <Image src={item.image.url} alt={item.image.altText} fill className="object-cover" />
+                  <div className="absolute bottom-0 right-0 w-5 h-5 bg-wine/90 rounded-tl-md flex items-center justify-center">
+                    {iconMap[item.icon] ? (
+                      React.cloneElement(iconMap[item.icon] as React.ReactElement<{ className?: string }>, {
+                        className: 'w-3 h-3 text-gold',
+                      })
+                    ) : (
+                      <FileText className="w-3 h-3 text-gold" />
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-wine/5 flex items-center justify-center flex-shrink-0">
+                  {iconMap[item.icon] || <FileText className="w-5 h-5 text-gold" />}
+                </div>
+              )}
               <div>
                 <h4 className="font-display text-lg font-medium text-wine">{item.name}</h4>
                 <p className="font-body text-xs text-wine/60 font-light mt-0.5">{item.description}</p>

@@ -43,7 +43,7 @@ export const HoopLogo: React.FC<HoopLogoProps> = ({
 
       {showText && (
         <div className="flex flex-col leading-none">
-          <span className="font-display tracking-[0.2em] text-lg font-bold text-wine uppercase">
+          <span className="font-display tracking-[0.2em] text-lg font-bold text-cream uppercase">
             HILO ARTE
           </span>
           <span className="font-accent italic text-xs tracking-wider text-antique-gold font-normal">
