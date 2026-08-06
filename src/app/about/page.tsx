@@ -1,6 +1,5 @@
 import React from 'react';
 import { Header } from '@/components/layout/header';
-import { PromoBar } from '@/components/layout/promo-bar';
 import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/commerce/cart-drawer';
 import { Container } from '@/components/common/container';
@@ -9,7 +8,6 @@ import { SectionHeading } from '@/components/common/section-heading';
 export default function AboutPage() {
   return (
     <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
-      <PromoBar />
       <Header variant="solid" />
 
       <main className="flex-1 pt-28 pb-20">

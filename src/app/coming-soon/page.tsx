@@ -1,6 +1,5 @@
 import React from 'react';
 import { Header } from '@/components/layout/header';
-import { PromoBar } from '@/components/layout/promo-bar';
 import { Footer } from '@/components/layout/footer';
 import { Container } from '@/components/common/container';
 import { CtaButton } from '@/components/common/cta-button';
@@ -8,7 +7,6 @@ import { CtaButton } from '@/components/common/cta-button';
 export default function ComingSoonPage() {
   return (
     <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
-      <PromoBar />
       <Header variant="solid" />
 
       <main className="flex-1 pt-32 pb-20 flex items-center justify-center">

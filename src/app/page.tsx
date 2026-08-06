@@ -1,5 +1,4 @@
 import { contentRepository, commerceRepository } from '@/lib/data/providers';
-import { PromoBar } from '@/components/layout/promo-bar';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/commerce/cart-drawer';
@@ -18,8 +17,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
-      {/* Top Banner & Header Shell */}
-      <PromoBar />
+      {/* Header Shell with integrated PromoBar */}
       <Header variant="overlay" />
 
       {/* Main Homepage Sections (9 Sections per Mockup & Spec) */}

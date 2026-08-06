@@ -1,7 +1,6 @@
 import React from 'react';
 import { contentRepository } from '@/lib/data/providers';
 import { Header } from '@/components/layout/header';
-import { PromoBar } from '@/components/layout/promo-bar';
 import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/commerce/cart-drawer';
 import { Container } from '@/components/common/container';
@@ -27,7 +26,6 @@ export default async function WhatsInsidePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
-      <PromoBar />
       <Header variant="solid" />
 
       <main className="flex-1 pt-28 pb-20">
