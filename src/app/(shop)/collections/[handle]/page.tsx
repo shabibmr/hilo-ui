@@ -10,12 +10,7 @@ import { ProductCard } from '@/components/commerce/product-card';
 
 export async function generateStaticParams() {
   const collections = await commerceRepository.getCollections();
-  return [
-    { handle: 'all' },
-    ...collections.map((c) => ({ handle: c.handle })),
-    { handle: 'workshops' },
-    { handle: 'customisation' },
-  ];
+  return [{ handle: 'all' }, ...collections.map((c) => ({ handle: c.handle }))];
 }
 
 interface CollectionPageProps {

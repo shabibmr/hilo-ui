@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Container } from '@/components/common/container';
 import { CtaButton } from '@/components/common/cta-button';
-import { ShieldCheck, CreditCard, Smartphone } from 'lucide-react';
+import { ShieldCheck, CreditCard, Smartphone, ShoppingBag } from 'lucide-react';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -15,11 +15,13 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('upi');
 
   const subtotal = cart?.subtotal || 0;
-  const shipping = subtotal >= 1499 || subtotal === 0 ? 0 : 99;
+  const shipping = subtotal >= 1499 ? 0 : 99;
   const total = subtotal + shipping;
+  const isEmpty = !cart?.lines || cart.lines.length === 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isEmpty) return;
     router.push('/checkout/confirmation');
   };
 
@@ -32,6 +34,20 @@ export default function CheckoutPage() {
           <div className="max-w-4xl mx-auto">
             <h1 className="font-display text-h1 text-wine text-center mb-8">Checkout</h1>
 
+            {isEmpty ? (
+              <div className="flex flex-col items-center justify-center text-center py-20 bg-white rounded-xl border border-wine/10 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-wine/5 flex items-center justify-center text-gold">
+                  <ShoppingBag className="w-8 h-8 stroke-[1.2]" />
+                </div>
+                <p className="font-display text-xl text-wine font-normal">Your basket is quiet.</p>
+                <p className="font-accent italic text-sm text-wine/60 max-w-sm">
+                  Add a handcrafted kit to your basket before checking out.
+                </p>
+                <CtaButton href="/collections/diy-kits" size="sm">
+                  Explore DIY Kits
+                </CtaButton>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               {/* Shipping & Payment Form */}
               <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-8 bg-white p-8 rounded-xl border border-wine/10">
@@ -230,6 +246,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </Container>
       </main>

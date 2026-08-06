@@ -1,6 +1,5 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import { commerceRepository } from '@/lib/data/providers';
 import { Header } from '@/components/layout/header';
 import { PromoBar } from '@/components/layout/promo-bar';
@@ -8,7 +7,9 @@ import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/commerce/cart-drawer';
 import { Container } from '@/components/common/container';
 import { AddToCartButton } from '@/components/commerce/add-to-cart-button';
-import { Clock, CheckCircle2, ShieldCheck, Truck } from 'lucide-react';
+import { ProductGallery } from '@/components/commerce/product-gallery';
+import { ProductTabs } from '@/components/commerce/product-tabs';
+import { Clock, ShieldCheck, Truck } from 'lucide-react';
 
 export async function generateStaticParams() {
   const products = await commerceRepository.getProducts();
@@ -35,24 +36,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <main className="flex-1 pt-28 pb-20">
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
-            {/* Gallery Image */}
-            <div className="space-y-4">
-              <div className="relative aspect-square rounded-2xl overflow-hidden border border-wine/10 bg-white shadow-wine-sm">
-                {product.images[0]?.url ? (
-                  <Image
-                    src={product.images[0].url}
-                    alt={product.title}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center font-display text-2xl text-wine/30">
-                    HILO ARTE
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Gallery */}
+            <ProductGallery images={product.images} productTitle={product.title} />
 
             {/* Product Meta & Actions */}
             <div className="space-y-6">
@@ -81,7 +66,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
 
               <p className="font-body text-sm text-wine/80 leading-relaxed font-light">
-                {product.description}
+                {product.shortDescription}
               </p>
 
               {/* Add to Cart Interactive Island */}
@@ -89,18 +74,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <AddToCartButton product={product} />
               </div>
 
-              {/* What's Included */}
-              <div className="bg-white/70 p-6 rounded-xl border border-wine/10 space-y-3">
-                <h3 className="font-display text-lg font-medium text-wine">What&apos;s Inside Your Kit</h3>
-                <ul className="space-y-2">
-                  {product.whatsIncluded.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5 text-xs text-wine/80 font-light">
-                      <CheckCircle2 className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <ProductTabs
+                description={product.description}
+                whatsIncluded={product.whatsIncluded}
+                shippingInfo={product.shippingInfo}
+                faqs={product.faqs}
+              />
 
               {/* Guarantee badges */}
               <div className="grid grid-cols-2 gap-4 pt-2 text-xs text-wine/70 font-light">
