@@ -6,10 +6,10 @@ import { SectionHeading } from '@/components/common/section-heading';
 
 export default function ShippingPolicyPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container size="sm">
           <SectionHeading
             eyebrow="DELIVERY INFORMATION"
@@ -17,7 +17,7 @@ export default function ShippingPolicyPage() {
             subheadline="Everything about our dispatch timelines and free shipping thresholds across India."
           />
 
-          <div className="bg-white p-8 sm:p-12 rounded-2xl border border-wine/10 space-y-6 text-sm text-wine/80 font-light leading-relaxed">
+          <div className="bg-white p-8 sm:p-12 rounded-2xl ring-1 ring-wine/5 space-y-6 text-sm text-wine/80 font-light leading-relaxed">
             <h3 className="font-display text-xl text-wine font-medium">1. Order Dispatch Timelines</h3>
             <p>All embroidery kits are dispatched within 24 hours from our Jaipur studio. Orders placed on Sunday are dispatched the following Monday morning.</p>
 

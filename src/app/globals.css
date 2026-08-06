@@ -3,22 +3,27 @@
 @theme {
   --color-wine: #380B0C;
   --color-deep-wine: #340A0A;
+  --color-wine-ink: #1F0506;
   --color-gold: #B08D57;
   --color-antique-gold: #C4A360;
   --color-cream: #F8F5EF;
+  --color-cream-warm: #FDFBF7;
   --color-sage: #A8B39A;
 
-  --font-display: var(--font-display), "Playfair Display", serif;
-  --font-accent: var(--font-accent), "Cormorant Garamond", serif;
-  --font-body: var(--font-body), "Inter", sans-serif;
+  --font-display: var(--font-display), "Playfair Display", Georgia, serif;
+  --font-accent: var(--font-accent), "Cormorant Garamond", Georgia, serif;
+  --font-body: var(--font-body), "Plus Jakarta Sans", system-ui, sans-serif;
 
-  --shadow-wine-sm: 0 4px 20px -4px rgba(56, 11, 12, 0.15);
-  --shadow-wine-lg: 0 8px 30px -8px rgba(56, 11, 12, 0.25);
-  --shadow-gold-glow: 0 0 24px 0 rgba(176, 141, 87, 0.35);
+  --shadow-wine-sm: 0 16px 40px -24px rgba(56, 11, 12, 0.1);
+  --shadow-wine-lg: 0 28px 64px -32px rgba(56, 11, 12, 0.14);
+  --shadow-gold-glow: 0 0 32px -4px rgba(176, 141, 87, 0.28);
+
+  --ease-luxury: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-organic: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 :root {
-  --background: #F8F5EF;
+  --background: #FDFBF7;
   --foreground: #380B0C;
 }
 
@@ -30,33 +35,53 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Fixed paper grain — never attach to scrolling containers */
+.paper-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+}
+
 /* Custom Utilities for Fluid Typography */
 .text-h1 {
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 5vw + 1rem, 4.5rem);
+  font-size: clamp(2.75rem, 5.5vw + 0.5rem, 5rem);
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
 
 .text-h2 {
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3vw + 1rem, 2.75rem);
+  font-size: clamp(1.85rem, 3vw + 0.75rem, 3rem);
   line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 .text-eyebrow {
-  font-family: var(--font-accent);
-  font-style: italic;
-  letter-spacing: 0.1em;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
+/* Luxury transition utility */
+.ease-luxury {
+  transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
+  *,
+  ::before,
+  ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }
-

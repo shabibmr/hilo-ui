@@ -8,29 +8,33 @@ export const DURATION = {
   microSlow: 0.35,
 
   // Tier 2: Narrative & Ambient motion (Slow luxury feel)
-  slow: 0.8,
+  slow: 0.85,
   slower: 1.5,
   slowest: 2.5,
 } as const;
 
-export const EASE_UI = [0.16, 1, 0.3, 1] as const; // Fast enter, smooth out
-export const EASE_ORGANIC = [0.25, 0.1, 0.25, 1] as const; // Organic luxury curve
+/** Fast enter, smooth out — UI micro */
+export const EASE_UI = [0.32, 0.72, 0, 1] as const;
+/** Organic luxury curve — narrative */
+export const EASE_ORGANIC = [0.25, 0.1, 0.25, 1] as const;
+/** Primary luxury easing (matches CSS --ease-luxury) */
+export const EASE_LUXURY = [0.32, 0.72, 0, 1] as const;
 
 // Shared Motion Variants
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { duration: DURATION.slow, ease: EASE_ORGANIC },
+    transition: { duration: DURATION.slow, ease: EASE_LUXURY },
   },
 };
 
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 48 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: DURATION.slow, ease: EASE_ORGANIC },
+    transition: { duration: DURATION.slow, ease: EASE_LUXURY },
   },
 };
 
@@ -50,7 +54,7 @@ export const floatLoop: Variants = {
     transition: {
       duration: 4,
       repeat: Infinity,
-      ease: 'easeInOut',
+      ease: EASE_ORGANIC,
     },
   },
 };
@@ -58,11 +62,12 @@ export const floatLoop: Variants = {
 export const hoverGoldGlow: Variants = {
   rest: {
     scale: 1,
-    boxShadow: '0 4px 20px -4px rgba(56, 11, 12, 0.15)',
+    boxShadow: '0 16px 40px -24px rgba(56, 11, 12, 0.1)',
   },
   hover: {
     scale: 1.02,
-    boxShadow: '0 0 24px 0 rgba(176, 141, 87, 0.35), 0 8px 30px -8px rgba(56, 11, 12, 0.25)',
+    boxShadow:
+      '0 0 32px -4px rgba(176, 141, 87, 0.28), 0 28px 64px -32px rgba(56, 11, 12, 0.14)',
     transition: { duration: DURATION.micro, ease: EASE_UI },
   },
 };

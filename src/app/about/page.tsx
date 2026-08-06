@@ -7,10 +7,10 @@ import { SectionHeading } from '@/components/common/section-heading';
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container>
           <SectionHeading
             eyebrow="BRAND PHILOSOPHY"

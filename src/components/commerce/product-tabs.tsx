@@ -28,8 +28,12 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
   const [active, setActive] = useState<TabKey>('description');
 
   return (
-    <div className="bg-white/70 rounded-xl border border-wine/10 overflow-hidden">
-      <div role="tablist" aria-label="Product information" className="flex border-b border-wine/10 overflow-x-auto">
+    <div className="bg-white/80 rounded-[1.5rem] ring-1 ring-wine/5 overflow-hidden">
+      <div
+        role="tablist"
+        aria-label="Product information"
+        className="flex border-b border-wine/5 overflow-x-auto"
+      >
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -39,8 +43,10 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
             aria-selected={active === tab.key}
             aria-controls={`panel-${tab.key}`}
             onClick={() => setActive(tab.key)}
-            className={`px-4 py-3 text-xs uppercase tracking-wider font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-              active === tab.key ? 'text-wine border-b-2 border-gold' : 'text-wine/50 hover:text-wine/80'
+            className={`px-4 py-3 text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] cursor-pointer ${
+              active === tab.key
+                ? 'text-wine border-b-2 border-gold'
+                : 'text-wine/50 hover:text-wine/80'
             }`}
           >
             {tab.label}
@@ -51,15 +57,22 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
       <div className="p-6">
         {active === 'description' && (
           <div id="panel-description" role="tabpanel" aria-labelledby="tab-description">
-            <p className="font-body text-sm text-wine/80 leading-relaxed font-light">{description}</p>
+            <p className="font-body text-sm text-wine/75 leading-relaxed font-light">
+              {description}
+            </p>
           </div>
         )}
 
         {active === 'included' && (
-          <ul id="panel-included" role="tabpanel" aria-labelledby="tab-included" className="space-y-2">
+          <ul
+            id="panel-included"
+            role="tabpanel"
+            aria-labelledby="tab-included"
+            className="space-y-2"
+          >
             {whatsIncluded.map((item, idx) => (
-              <li key={idx} className="flex items-start gap-2.5 text-xs text-wine/80 font-light">
-                <CheckCircle2 className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
+              <li key={idx} className="flex items-start gap-2.5 text-xs text-wine/75 font-light">
+                <CheckCircle2 className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" strokeWidth={1.25} />
                 <span>{item}</span>
               </li>
             ))}
@@ -68,7 +81,9 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
 
         {active === 'shipping' && (
           <div id="panel-shipping" role="tabpanel" aria-labelledby="tab-shipping">
-            <p className="font-body text-sm text-wine/80 leading-relaxed font-light">{shippingInfo}</p>
+            <p className="font-body text-sm text-wine/75 leading-relaxed font-light">
+              {shippingInfo}
+            </p>
           </div>
         )}
 
@@ -77,7 +92,7 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
             {faqs.map((faq, idx) => (
               <div key={idx}>
                 <p className="font-display text-sm font-medium text-wine">{faq.question}</p>
-                <p className="font-body text-xs text-wine/70 font-light mt-1">{faq.answer}</p>
+                <p className="font-body text-xs text-wine/65 font-light mt-1">{faq.answer}</p>
               </div>
             ))}
           </div>

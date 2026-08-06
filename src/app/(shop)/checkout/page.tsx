@@ -26,16 +26,16 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container>
           <div className="max-w-4xl mx-auto">
             <h1 className="font-display text-h1 text-wine text-center mb-8">Checkout</h1>
 
             {isEmpty ? (
-              <div className="flex flex-col items-center justify-center text-center py-20 bg-white rounded-xl border border-wine/10 space-y-4">
+              <div className="flex flex-col items-center justify-center text-center py-20 bg-white rounded-xl ring-1 ring-wine/5 space-y-4">
                 <div className="w-16 h-16 rounded-full bg-wine/5 flex items-center justify-center text-gold">
                   <ShoppingBag className="w-8 h-8 stroke-[1.2]" />
                 </div>
@@ -50,7 +50,7 @@ export default function CheckoutPage() {
             ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               {/* Shipping & Payment Form */}
-              <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-8 bg-white p-8 rounded-xl border border-wine/10">
+              <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-8 bg-white p-8 rounded-xl ring-1 ring-wine/5">
                 {/* Contact Information */}
                 <div className="space-y-4">
                   <h3 className="font-display text-xl text-wine font-medium">1. Contact Information</h3>
@@ -65,7 +65,7 @@ export default function CheckoutPage() {
                         type="text"
                         autoComplete="given-name"
                         required
-                        className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                        className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                       />
                     </div>
                     <div>
@@ -78,7 +78,7 @@ export default function CheckoutPage() {
                         type="text"
                         autoComplete="family-name"
                         required
-                        className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                        className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                       />
                     </div>
                   </div>
@@ -93,7 +93,7 @@ export default function CheckoutPage() {
                       autoComplete="email"
                       placeholder="For order updates"
                       required
-                      className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                     />
                   </div>
                   <div>
@@ -107,7 +107,7 @@ export default function CheckoutPage() {
                       autoComplete="tel"
                       placeholder="For delivery tracking"
                       required
-                      className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                     />
                   </div>
                 </div>
@@ -125,7 +125,7 @@ export default function CheckoutPage() {
                       type="text"
                       autoComplete="street-address"
                       required
-                      className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -139,7 +139,7 @@ export default function CheckoutPage() {
                         type="text"
                         autoComplete="address-level2"
                         required
-                        className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                        className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                       />
                     </div>
                     <div>
@@ -152,7 +152,7 @@ export default function CheckoutPage() {
                         type="text"
                         autoComplete="address-level1"
                         required
-                        className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                        className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                       />
                     </div>
                     <div>
@@ -166,7 +166,7 @@ export default function CheckoutPage() {
                         inputMode="numeric"
                         autoComplete="postal-code"
                         required
-                        className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                        className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                       />
                     </div>
                   </div>
@@ -209,7 +209,7 @@ export default function CheckoutPage() {
 
               {/* Order Summary */}
               <div className="lg:col-span-5 space-y-6">
-                <div className="bg-white/70 p-6 rounded-xl border border-wine/10 space-y-4">
+                <div className="bg-white/70 p-6 rounded-xl ring-1 ring-wine/5 space-y-4">
                   <h3 className="font-display text-xl text-wine font-medium">Order Summary</h3>
 
                   <div className="space-y-3">

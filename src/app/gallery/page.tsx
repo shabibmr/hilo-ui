@@ -17,10 +17,10 @@ const GALLERY_ITEMS = [
 
 export default function GalleryPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container>
           <SectionHeading
             eyebrow="REAL PEOPLE REAL STORIES"
@@ -33,7 +33,7 @@ export default function GalleryPage() {
             {GALLERY_ITEMS.map((item) => (
               <div
                 key={item.id}
-                className="group bg-white rounded-2xl overflow-hidden border border-wine/10 hover:border-gold/50 transition-all duration-300 hover:shadow-gold-glow flex flex-col justify-between"
+                className="group bg-white rounded-2xl overflow-hidden ring-1 ring-wine/5 hover:border-gold/50 transition-all duration-300 hover:shadow-gold-glow flex flex-col justify-between"
               >
                 <div className="relative aspect-[4/5] bg-wine/5 overflow-hidden">
                   <div className="w-full h-full flex items-center justify-center bg-deep-wine text-antique-gold font-display text-xl">

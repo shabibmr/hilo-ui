@@ -6,10 +6,10 @@ import { SectionHeading } from '@/components/common/section-heading';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container size="sm">
           <SectionHeading
             eyebrow="LEGAL & TRUST"
@@ -17,7 +17,7 @@ export default function PrivacyPolicyPage() {
             subheadline="How we respect and protect your personal information at HILO ARTE."
           />
 
-          <div className="bg-white p-8 sm:p-12 rounded-2xl border border-wine/10 space-y-6 text-sm text-wine/80 font-light leading-relaxed">
+          <div className="bg-white p-8 sm:p-12 rounded-2xl ring-1 ring-wine/5 space-y-6 text-sm text-wine/80 font-light leading-relaxed">
             <h3 className="font-display text-xl text-wine font-medium">1. Information Collection</h3>
             <p>We collect information you provide directly when placing an order, subscribing to our Quiet Letters newsletter, or contacting studio support. This includes name, delivery address, email, and phone number.</p>
 

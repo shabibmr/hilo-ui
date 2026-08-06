@@ -10,10 +10,10 @@ export default async function FounderStoryPage() {
   const story = await contentRepository.getFounderStory();
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container size="sm">
           <div className="text-center space-y-4 mb-12">
             <span className="text-eyebrow text-xs tracking-[0.25em] text-gold font-accent">
@@ -27,7 +27,7 @@ export default async function FounderStoryPage() {
             </p>
           </div>
 
-          <div className="space-y-6 font-body text-base text-wine/80 font-light leading-relaxed bg-white/70 p-8 rounded-2xl border border-wine/10">
+          <div className="space-y-6 font-body text-base text-wine/80 font-light leading-relaxed bg-white/70 p-8 rounded-2xl ring-1 ring-wine/5">
             {story.storyParagraphs.map((para, idx) => (
               <p key={idx}>{para}</p>
             ))}
@@ -42,7 +42,7 @@ export default async function FounderStoryPage() {
               {story.galleryImages.map((img) => (
                 <div
                   key={img.url}
-                  className="relative aspect-square rounded-xl overflow-hidden border border-wine/10"
+                  className="relative aspect-square rounded-xl overflow-hidden ring-1 ring-wine/5"
                 >
                   <Image src={img.url} alt={img.altText} fill className="object-cover" />
                 </div>

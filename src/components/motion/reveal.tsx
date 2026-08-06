@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { DURATION, EASE_ORGANIC } from '@/lib/motion-variants';
+import { DURATION, EASE_LUXURY } from '@/lib/motion-variants';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface RevealProps {
@@ -28,13 +28,13 @@ export const Reveal: React.FC<RevealProps> = ({
       whileInView="visible"
       viewport={{ once: true, margin: '-50px' }}
       variants={{
-        hidden: { opacity: 0, y: 24 },
+        hidden: { opacity: 0, y: 48 },
         visible: {
           opacity: 1,
           y: 0,
           transition: {
             duration: DURATION.slow,
-            ease: EASE_ORGANIC,
+            ease: EASE_LUXURY,
             delay,
           },
         },

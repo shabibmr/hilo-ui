@@ -25,10 +25,10 @@ export default async function WhatsInsidePage() {
   const content = await contentRepository.getHomepageContent();
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container>
           <SectionHeading
             eyebrow="ANATOMY OF A LUXURY KIT"
@@ -44,7 +44,7 @@ export default async function WhatsInsidePage() {
             {content.kitContentsItems.map((item) => (
               <div
                 key={item.id}
-                className="bg-white p-8 rounded-2xl border border-wine/10 hover:border-gold transition-all duration-300 hover:shadow-gold-glow flex flex-col items-center text-center space-y-4"
+                className="bg-white p-8 rounded-2xl ring-1 ring-wine/5 hover:border-gold transition-all duration-300 hover:shadow-gold-glow flex flex-col items-center text-center space-y-4"
               >
                 <div className="w-16 h-16 rounded-full bg-wine/5 flex items-center justify-center border border-gold/30">
                   {iconMap[item.icon] || <FileText className="w-8 h-8 text-gold" />}

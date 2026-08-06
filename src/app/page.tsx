@@ -16,38 +16,20 @@ export default async function HomePage() {
   const bestSellers = await commerceRepository.getBestSellers();
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
-      {/* Header Shell with integrated PromoBar */}
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="overlay" />
 
-      {/* Main Homepage Sections (9 Sections per Mockup & Spec) */}
       <main className="flex-1">
-        {/* Section 1: Hero / The Arrival */}
         <HeroSection content={content.hero} />
-
-        {/* Section 2: Bee-Guided Collections */}
         <CollectionsNavSection items={content.collectionsNav} />
-
-        {/* Section 3: Why You'll Love HILO ARTE */}
         <WhyHiloSection cards={content.whyHiloCards} />
-
-        {/* Section 4: Best Sellers */}
         <BestSellersSection products={bestSellers} />
-
-        {/* Section 5: Founder Story Teaser */}
         <FounderTeaserSection content={content.founderTeaser} />
-
-        {/* Section 6: What's Inside Your Kit */}
         <KitContentsSection items={content.kitContentsItems} />
-
-        {/* Section 7: Creative Journey Timeline */}
         <CreativeJourneySection steps={content.creativeJourneySteps} />
-
-        {/* Section 8: Newsletter Band */}
         <NewsletterSection />
       </main>
 
-      {/* Footer & Global Cart Drawer */}
       <Footer />
       <CartDrawer />
     </div>

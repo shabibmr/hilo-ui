@@ -18,10 +18,10 @@ export default function WorkshopsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container>
           <SectionHeading
             eyebrow="COMMUNITY & CREATIVITY"
@@ -31,22 +31,22 @@ export default function WorkshopsPage() {
 
           {/* Categories Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div className="bg-white p-6 rounded-xl border border-wine/10 text-center space-y-3">
+            <div className="bg-white p-6 rounded-xl ring-1 ring-wine/5 text-center space-y-3">
               <Building2 className="w-8 h-8 text-gold mx-auto" />
               <h3 className="font-display text-lg font-medium text-wine">Corporates</h3>
               <p className="text-xs text-wine/70 font-light">Wellness pauses, offsite workshops & team bonding sessions.</p>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-wine/10 text-center space-y-3">
+            <div className="bg-white p-6 rounded-xl ring-1 ring-wine/5 text-center space-y-3">
               <GraduationCap className="w-8 h-8 text-gold mx-auto" />
               <h3 className="font-display text-lg font-medium text-wine">Schools</h3>
               <p className="text-xs text-wine/70 font-light">Tactile art education and focus-building workshops for students.</p>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-wine/10 text-center space-y-3">
+            <div className="bg-white p-6 rounded-xl ring-1 ring-wine/5 text-center space-y-3">
               <Heart className="w-8 h-8 text-gold mx-auto" />
               <h3 className="font-display text-lg font-medium text-wine">Mothers & Groups</h3>
               <p className="text-xs text-wine/70 font-light">Quiet weekend tea & stitching circles for mothers and friends.</p>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-wine/10 text-center space-y-3">
+            <div className="bg-white p-6 rounded-xl ring-1 ring-wine/5 text-center space-y-3">
               <Users className="w-8 h-8 text-gold mx-auto" />
               <h3 className="font-display text-lg font-medium text-wine">Communities</h3>
               <p className="text-xs text-wine/70 font-light">Pop-up art experiences for cafes, galleries, and events.</p>
@@ -54,7 +54,7 @@ export default function WorkshopsPage() {
           </div>
 
           {/* Booking Inquiry Form */}
-          <div className="max-w-2xl mx-auto bg-white p-8 sm:p-12 rounded-2xl border border-wine/10 shadow-wine-sm">
+          <div className="max-w-2xl mx-auto bg-white p-8 sm:p-12 rounded-2xl ring-1 ring-wine/5 shadow-wine-sm">
             <h3 className="font-display text-2xl font-medium text-wine text-center mb-6">
               Inquire for a Custom Workshop
             </h3>
@@ -73,17 +73,17 @@ export default function WorkshopsPage() {
                     type="text"
                     placeholder="Your Name"
                     required
-                    className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                    className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                   />
                   <input
                     type="email"
                     placeholder="Email Address"
                     required
-                    className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                    className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <select required className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm text-wine">
+                  <select required className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm text-wine">
                     <option value="">Workshop Type...</option>
                     <option value="corporate">Corporate Wellness</option>
                     <option value="school">School / University</option>
@@ -94,14 +94,14 @@ export default function WorkshopsPage() {
                     type="number"
                     placeholder="Expected Attendees"
                     required
-                    className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                    className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                   />
                 </div>
                 <textarea
                   placeholder="Tell us about your event, location, and preferred dates..."
                   rows={4}
                   required
-                  className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                  className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                 />
                 <CtaButton type="submit" fullWidth size="lg">
                   Submit Workshop Inquiry

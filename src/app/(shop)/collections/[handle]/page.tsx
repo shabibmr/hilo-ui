@@ -29,15 +29,14 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container>
-          {/* Collection Header Banner */}
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <span className="text-eyebrow text-xs tracking-[0.25em] text-gold font-accent">
-              — COLLECTION —
+            <span className="inline-flex items-center rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-gold bg-gold/[0.08] ring-1 ring-gold/25">
+              Collection
             </span>
             <h1 className="font-display text-h1 text-wine">
               {collection ? collection.title : 'All Embroidery Kits'}
@@ -47,9 +46,8 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
             </p>
           </div>
 
-          {/* Product Grid */}
           {products.length === 0 ? (
-            <div className="text-center py-16 bg-white/50 rounded-xl border border-wine/10">
+            <div className="text-center py-16 bg-white/50 rounded-[2rem] ring-1 ring-wine/5">
               <p className="font-display text-xl text-wine/60">No items found in this collection.</p>
             </div>
           ) : (

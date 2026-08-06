@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<!--
+  HILO ARTE — Editorial Luxury Homepage Mockup
+  Reference mock for Next.js visual upgrade — not production.
+  Open via a local static server for images:
+    npx --yes serve . -p 4173
+    then visit http://localhost:4173/docs/mockups/hilo-editorial-luxury.html
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HILO ARTE — Editorial Luxury Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       DESIGN TOKENS — Editorial Luxury
+       ═══════════════════════════════════════════════════════════ */
+    :root {
+      --wine: #380B0C;
+      --deep-wine: #340A0A;
+      --wine-ink: #1F0506;
+      --gold: #B08D57;
+      --antique-gold: #C4A360;
+      --cream: #F8F5EF;
+      --cream-warm: #FDFBF7;
+      --sage: #A8B39A;
+      --white-soft: rgba(255, 255, 255, 0.72);
+
+      --font-display: "Playfair Display", Georgia, serif;
+      --font-accent: "Cormorant Garamond", Georgia, serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+
+      --ease-luxury: cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-organic: cubic-bezier(0.25, 0.1, 0.25, 1);
+      --dur-ui: 0.45s;
+      --dur-narrative: 0.85s;
+
+      --shadow-ambient: 0 28px 64px -32px rgba(56, 11, 12, 0.14);
+      --shadow-soft: 0 16px 40px -24px rgba(56, 11, 12, 0.1);
+      --shadow-gold-glow: 0 0 32px -4px rgba(176, 141, 87, 0.28);
+
+      --radius-outer: 2rem;
+      --radius-inner: calc(2rem - 0.375rem);
+      --radius-lg: 1.5rem;
+      --max: 72rem;
+      --gutter: clamp(1rem, 4vw, 2rem);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--cream-warm);
+      color: var(--wine);
+      font-weight: 400;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; border: none; background: none; cursor: pointer; }
+    ul { list-style: none; }
+
+    /* Fixed paper grain — never on scrolling containers */
+    .grain {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 180px 180px;
+    }
+
+    /* Typography */
+    .font-display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.1; }
+    .font-accent { font-family: var(--font-accent); font-style: italic; }
+    .text-h1 { font-size: clamp(2.75rem, 5.5vw + 0.5rem, 5rem); }
+    .text-h2 { font-size: clamp(1.85rem, 3vw + 0.75rem, 3rem); }
+    .text-body { font-weight: 300; font-size: clamp(0.95rem, 0.3vw + 0.9rem, 1.125rem); line-height: 1.7; color: rgba(56, 11, 12, 0.78); }
+
+    .container {
+      width: 100%;
+      max-width: var(--max);
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+
+    .section {
+      padding-block: clamp(4.5rem, 8vw, 8rem);
+      position: relative;
+    }
+
+    /* Eyebrow pill */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(176, 141, 87, 0.08);
+      ring: none;
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.22);
+    }
+    .eyebrow--on-dark {
+      color: var(--antique-gold);
+      background: rgba(196, 163, 96, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(196, 163, 96, 0.28);
+    }
+
+    /* Section heading */
+    .section-head {
+      text-align: center;
+      max-width: 40rem;
+      margin: 0 auto clamp(2.5rem, 5vw, 4rem);
+    }
+    .section-head .eyebrow { margin-bottom: 1rem; }
+    .section-head h2 { margin-bottom: 1rem; color: var(--wine); }
+    .section-head .flourish {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .section-head .flourish span:first-child,
+    .section-head .flourish span:last-child {
+      height: 1px;
+      width: 2rem;
+      background: rgba(176, 141, 87, 0.4);
+    }
+    .section-head .flourish i {
+      width: 6px;
+      height: 6px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      display: block;
+    }
+
+    /* Double-bezel */
+    .bezel {
+      padding: 0.375rem;
+      border-radius: var(--radius-outer);
+      background: rgba(56, 11, 12, 0.035);
+      box-shadow: inset 0 0 0 1px rgba(56, 11, 12, 0.05);
+    }
+    .bezel__core {
+      border-radius: var(--radius-inner);
+      background: var(--cream-warm);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.65);
+      overflow: hidden;
+      height: 100%;
+    }
+    .bezel--dark {
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+    .bezel--dark .bezel__core {
+      background: var(--deep-wine);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    }
+
+    /* Island CTAs */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.55rem 0.55rem 0.55rem 1.5rem;
+      transition: transform var(--dur-ui) var(--ease-luxury),
+                  background var(--dur-ui) var(--ease-luxury),
+                  color var(--dur-ui) var(--ease-luxury),
+                  box-shadow var(--dur-ui) var(--ease-luxury);
+      will-change: transform;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn__icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: transform var(--dur-ui) var(--ease-luxury);
+    }
+    .btn__icon svg { width: 14px; height: 14px; stroke-width: 1.25; }
+    .btn:hover .btn__icon { transform: translate(2px, -1px) scale(1.05); }
+
+    .btn--gold {
+      background: var(--gold);
+      color: var(--wine);
+      box-shadow: var(--shadow-gold-glow);
+    }
+    .btn--gold:hover { background: var(--antique-gold); }
+    .btn--gold .btn__icon { background: rgba(56, 11, 12, 0.1); }
+
+    .btn--wine {
+      background: var(--wine);
+      color: var(--cream);
+    }
+    .btn--wine:hover { background: var(--deep-wine); }
+    .btn--wine .btn__icon { background: rgba(255, 255, 255, 0.1); }
+
+    .btn--outline {
+      background: transparent;
+      color: var(--gold);
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.55);
+      padding-right: 1.5rem;
+    }
+    .btn--outline:hover { background: rgba(176, 141, 87, 0.08); }
+    .btn--outline .btn__icon { background: rgba(176, 141, 87, 0.12); }
+
+    .btn--outline-cream {
+      color: var(--cream);
+      box-shadow: inset 0 0 0 1px rgba(248, 245, 239, 0.45);
+    }
+    .btn--outline-cream:hover { background: rgba(248, 245, 239, 0.08); }
+    .btn--outline-cream .btn__icon { background: rgba(248, 245, 239, 0.12); }
+
+    .btn--sm {
+      font-size: 0.7rem;
+      padding: 0.35rem 0.4rem 0.35rem 1rem;
+    }
+    .btn--sm .btn__icon { width: 2rem; height: 2rem; }
+    .btn--sm .btn__icon svg { width: 12px; height: 12px; }
+
+    /* Reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(2.5rem);
+      transition: opacity var(--dur-narrative) var(--ease-luxury),
+                  transform var(--dur-narrative) var(--ease-luxury);
+    }
+    .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-d1 { transition-delay: 0.08s; }
+    .reveal-d2 { transition-delay: 0.16s; }
+    .reveal-d3 { transition-delay: 0.24s; }
+    .reveal-d4 { transition-delay: 0.32s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .particle, .moon-ring { animation: none !important; }
+      .btn, .btn__icon, .nav-island, .hamburger span { transition-duration: 0.01ms !important; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       PROMO + ISLAND NAV
+       ═══════════════════════════════════════════════════════════ */
+    .promo {
+      position: relative;
+      z-index: 45;
+      background: var(--wine-ink);
+      color: var(--antique-gold);
+      text-align: center;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 0.55rem var(--gutter);
+    }
+    .promo span { opacity: 0.9; }
+
+    .nav-shell {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem var(--gutter) 0;
+      pointer-events: none;
+    }
+    .nav-island {
+      pointer-events: auto;
+      max-width: var(--max);
+      margin-inline: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 0.65rem 0.85rem 0.65rem 1.25rem;
+      border-radius: 999px;
+      background: rgba(52, 10, 10, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.22),
+                  0 12px 40px -16px rgba(31, 5, 6, 0.45);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: var(--cream);
+      transition: padding var(--dur-ui) var(--ease-luxury),
+                  background var(--dur-ui) var(--ease-luxury),
+                  box-shadow var(--dur-ui) var(--ease-luxury);
+    }
+    .nav-island.is-scrolled {
+      padding-block: 0.45rem;
+      background: rgba(52, 10, 10, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.3),
+                  0 16px 48px -12px rgba(31, 5, 6, 0.55);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-shrink: 0;
+    }
+    .brand__mark {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.45);
+      display: grid;
+      place-items: center;
+    }
+    .brand__mark svg { width: 1.15rem; height: 1.15rem; }
+    .brand__word {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .brand__tag {
+      display: none;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(248, 245, 239, 0.55);
+      margin-top: 0.1rem;
+    }
+    @media (min-width: 1100px) {
+      .brand__tag { display: block; }
+    }
+
+    .nav-links {
+      display: none;
+      align-items: center;
+      gap: 1.75rem;
+    }
+    @media (min-width: 900px) {
+      .nav-links { display: flex; }
+    }
+    .nav-links a {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(248, 245, 239, 0.85);
+      position: relative;
+      padding-block: 0.35rem;
+      transition: color var(--dur-ui) var(--ease-luxury);
+    }
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 1px;
+      width: 0;
+      background: var(--gold);
+      transition: width var(--dur-ui) var(--ease-luxury);
+    }
+    .nav-links a:hover { color: var(--antique-gold); }
+    .nav-links a:hover::after { width: 100%; }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .icon-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      color: var(--cream);
+      position: relative;
+      transition: background var(--dur-ui) var(--ease-luxury), color var(--dur-ui) var(--ease-luxury);
+    }
+    .icon-btn:hover {
+      background: rgba(176, 141, 87, 0.12);
+      color: var(--antique-gold);
+    }
+    .icon-btn svg { width: 1.15rem; height: 1.15rem; stroke-width: 1.25; }
+    .cart-count {
+      position: absolute;
+      top: 0.15rem;
+      right: 0.15rem;
+      min-width: 1rem;
+      height: 1rem;
+      padding-inline: 0.25rem;
+      border-radius: 999px;
+      background: var(--gold);
+      color: var(--wine);
+      font-size: 9px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+    }
+
+    .hamburger {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    @media (min-width: 900px) {
+      .hamburger { display: none; }
+    }
+    .hamburger span {
+      display: block;
+      width: 1.1rem;
+      height: 1.25px;
+      background: var(--cream);
+      border-radius: 2px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: transform var(--dur-ui) var(--ease-luxury),
+                  opacity var(--dur-ui) var(--ease-luxury),
+                  top var(--dur-ui) var(--ease-luxury);
+    }
+    .hamburger span:nth-child(1) { top: calc(50% - 4px); }
+    .hamburger span:nth-child(2) { top: calc(50% + 4px); }
+    .hamburger.is-open span:nth-child(1) {
+      top: 50%;
+      transform: translateX(-50%) rotate(45deg);
+    }
+    .hamburger.is-open span:nth-child(2) {
+      top: 50%;
+      transform: translateX(-50%) rotate(-45deg);
+    }
+
+    /* Mobile menu overlay */
+    .mobile-menu {
+      position: fixed;
+      inset: 0;
+      z-index: 55;
+      display: flex;
+      flex-direction: column;
+      background: rgba(31, 5, 6, 0.88);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.5s var(--ease-luxury), visibility 0.5s var(--ease-luxury);
+    }
+    .mobile-menu.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    .mobile-menu__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem var(--gutter);
+    }
+    .mobile-menu__nav {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 2rem;
+    }
+    .mobile-menu__nav a {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 5vw, 2.5rem);
+      color: var(--cream);
+      opacity: 0;
+      transform: translateY(2.5rem);
+      transition: opacity 0.6s var(--ease-luxury),
+                  transform 0.6s var(--ease-luxury),
+                  color 0.3s var(--ease-luxury);
+    }
+    .mobile-menu.is-open .mobile-menu__nav a {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .mobile-menu.is-open .mobile-menu__nav a:nth-child(1) { transition-delay: 0.08s; }
+    .mobile-menu.is-open .mobile-menu__nav a:nth-child(2) { transition-delay: 0.14s; }
+    .mobile-menu.is-open .mobile-menu__nav a:nth-child(3) { transition-delay: 0.2s; }
+    .mobile-menu.is-open .mobile-menu__nav a:nth-child(4) { transition-delay: 0.26s; }
+    .mobile-menu.is-open .mobile-menu__nav a:nth-child(5) { transition-delay: 0.32s; }
+    .mobile-menu.is-open .mobile-menu__nav a:nth-child(6) { transition-delay: 0.38s; }
+    .mobile-menu__nav a:hover { color: var(--antique-gold); }
+    .mobile-menu__foot {
+      text-align: center;
+      padding: 2rem;
+      color: var(--antique-gold);
+      font-family: var(--font-accent);
+      font-style: italic;
+      font-size: 1.05rem;
+      opacity: 0;
+      transition: opacity 0.6s var(--ease-luxury) 0.4s;
+    }
+    .mobile-menu.is-open .mobile-menu__foot { opacity: 1; }
+
+    /* ═══════════════════════════════════════════════════════════
+       HERO — Editorial Split
+       ═══════════════════════════════════════════════════════════ */
+    .hero {
+      position: relative;
+      min-height: 100dvh;
+      background: radial-gradient(ellipse at 30% 40%, #4a1214 0%, var(--deep-wine) 45%, var(--wine-ink) 100%);
+      color: var(--cream);
+      padding: clamp(5rem, 12vw, 7rem) 0 clamp(4rem, 8vw, 6rem);
+      overflow: hidden;
+    }
+    .moon-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(176, 141, 87, 0.12);
+      top: 50%;
+      left: 58%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .moon-ring--a { width: min(520px, 70vw); height: min(520px, 70vw); }
+    .moon-ring--b { width: min(720px, 90vw); height: min(720px, 90vw); border-color: rgba(176, 141, 87, 0.06); }
+    .particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(196, 163, 96, 0.45);
+      animation: float-particle 5s var(--ease-organic) infinite;
+    }
+    @keyframes float-particle {
+      0%, 100% { transform: translateY(0); opacity: 0.25; }
+      50% { transform: translateY(-18px); opacity: 0.75; }
+    }
+
+    .hero__grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      gap: clamp(2.5rem, 5vw, 4rem);
+      align-items: center;
+    }
+    @media (min-width: 900px) {
+      .hero__grid {
+        grid-template-columns: 1fr 1.05fr;
+        gap: 3.5rem;
+      }
+    }
+    .hero__copy { max-width: 34rem; }
+    .hero__copy .eyebrow { margin-bottom: 1.25rem; }
+    .hero__copy h1 {
+      color: var(--cream);
+      margin-bottom: 1.25rem;
+    }
+    .hero__copy .lead {
+      color: rgba(248, 245, 239, 0.78);
+      font-weight: 300;
+      font-size: clamp(1rem, 0.4vw + 0.95rem, 1.15rem);
+      line-height: 1.7;
+      max-width: 28rem;
+      margin-bottom: 2rem;
+    }
+    .hero__ctas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      align-items: center;
+    }
+    .hero__visual {
+      position: relative;
+    }
+    .hero__visual .bezel {
+      transform: none;
+      box-shadow: var(--shadow-ambient), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+    @media (min-width: 900px) {
+      .hero__visual .bezel {
+        transform: rotate(-1.5deg);
+      }
+    }
+    .hero__visual img {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      max-height: min(72vh, 640px);
+    }
+    .hero__caption {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      padding: 0.85rem 1.1rem;
+      border-radius: 1rem;
+      background: rgba(31, 5, 6, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.2);
+      font-family: var(--font-accent);
+      font-style: italic;
+      font-size: 0.95rem;
+      color: var(--antique-gold);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       COLLECTIONS
+       ═══════════════════════════════════════════════════════════ */
+    .collections-rail {
+      display: grid;
+      gap: 1rem;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(220px, 1fr);
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 0.5rem;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      scrollbar-width: none;
+    }
+    .collections-rail::-webkit-scrollbar { display: none; }
+    @media (min-width: 900px) {
+      .collections-rail {
+        grid-auto-flow: unset;
+        grid-template-columns: 1.4fr 1fr 1fr 0.9fr 0.9fr;
+        overflow: visible;
+        margin-inline: 0;
+        padding-inline: 0;
+      }
+    }
+    .collection-card {
+      scroll-snap-align: start;
+      display: block;
+      height: 100%;
+      min-height: 280px;
+      transition: transform var(--dur-ui) var(--ease-luxury);
+    }
+    .collection-card:hover { transform: translateY(-4px); }
+    .collection-card .bezel__core {
+      position: relative;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1.35rem;
+      background: #2a0a0b;
+    }
+    .collection-card img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.55;
+      transition: opacity var(--dur-ui) var(--ease-luxury), transform 0.9s var(--ease-luxury);
+    }
+    .collection-card:hover img {
+      opacity: 0.7;
+      transform: scale(1.04);
+    }
+    .collection-card__body { position: relative; z-index: 1; color: var(--cream); }
+    .collection-card__body h3 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .collection-card__body p {
+      font-size: 0.8rem;
+      font-weight: 300;
+      color: rgba(248, 245, 239, 0.7);
+      margin-bottom: 0.75rem;
+    }
+    .collection-card__meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .badge {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      background: rgba(176, 141, 87, 0.15);
+      color: var(--antique-gold);
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.3);
+    }
+    .link-arrow {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: var(--antique-gold);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       WHY HILO — Asymmetrical Bento
+       ═══════════════════════════════════════════════════════════ */
+    .why {
+      background: linear-gradient(180deg, rgba(168, 179, 154, 0.12) 0%, var(--cream-warm) 100%);
+    }
+    .bento {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px) {
+      .bento {
+        grid-template-columns: repeat(12, 1fr);
+        grid-auto-rows: minmax(140px, auto);
+        gap: 1.15rem;
+      }
+      .bento__feature {
+        grid-column: span 8;
+        grid-row: span 2;
+      }
+      .bento__cell:nth-child(2) { grid-column: span 4; }
+      .bento__cell:nth-child(3) { grid-column: span 4; }
+      .bento__cell:nth-child(4) { grid-column: span 4; }
+      .bento__cell:nth-child(5) { grid-column: span 4; }
+      .bento__cell:nth-child(6) { grid-column: span 4; }
+      .bento__cell:nth-child(7) { grid-column: span 4; }
+    }
+    .bento__cell .bezel,
+    .bento__feature .bezel { height: 100%; }
+    .bento-inner {
+      padding: 1.5rem 1.6rem;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .bento__feature .bento-inner {
+      padding: clamp(1.75rem, 3vw, 2.5rem);
+      justify-content: space-between;
+      min-height: 280px;
+      background:
+        radial-gradient(ellipse at 90% 10%, rgba(176, 141, 87, 0.12), transparent 50%),
+        var(--cream-warm);
+    }
+    .bento-inner h3 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--wine);
+    }
+    .bento__feature h3 {
+      font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+      max-width: 16ch;
+      line-height: 1.2;
+    }
+    .bento-inner p {
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: rgba(56, 11, 12, 0.7);
+      line-height: 1.65;
+    }
+    .icon-shell {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(56, 11, 12, 0.04);
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.28);
+      color: var(--gold);
+    }
+    .icon-shell svg { width: 1.15rem; height: 1.15rem; stroke-width: 1.15; }
+
+    /* ═══════════════════════════════════════════════════════════
+       BEST SELLERS
+       ═══════════════════════════════════════════════════════════ */
+    .product-grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) {
+      .product-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .product-grid {
+        grid-template-columns: 1.35fr 1fr 1fr 1fr;
+        gap: 1.25rem;
+      }
+    }
+    .product-card {
+      height: 100%;
+      transition: transform var(--dur-ui) var(--ease-luxury);
+    }
+    .product-card:hover { transform: translateY(-6px); }
+    .product-card .bezel { height: 100%; box-shadow: var(--shadow-soft); }
+    .product-card__media {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      background: rgba(56, 11, 12, 0.04);
+      overflow: hidden;
+    }
+    .product-card__media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.9s var(--ease-luxury);
+    }
+    .product-card:hover .product-card__media img { transform: scale(1.05); }
+    .product-card__badges {
+      position: absolute;
+      inset: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+    .pill {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .pill--wine {
+      background: rgba(52, 10, 10, 0.88);
+      color: var(--antique-gold);
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.3);
+    }
+    .pill--cream {
+      background: rgba(253, 251, 247, 0.92);
+      color: var(--wine);
+      box-shadow: inset 0 0 0 1px rgba(56, 11, 12, 0.08);
+    }
+    .product-card__body {
+      padding: 1.25rem 1.35rem 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      flex: 1;
+    }
+    .product-card__body h3 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--wine);
+      transition: color var(--dur-ui) var(--ease-luxury);
+    }
+    .product-card:hover .product-card__body h3 { color: var(--gold); }
+    .product-card__sub {
+      font-family: var(--font-accent);
+      font-style: italic;
+      font-size: 0.9rem;
+      color: rgba(56, 11, 12, 0.55);
+    }
+    .product-card__foot {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      box-shadow: inset 0 1px 0 rgba(56, 11, 12, 0.06);
+    }
+    .price-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(56, 11, 12, 0.45);
+      font-weight: 500;
+    }
+    .price {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      color: var(--wine);
+    }
+    .product-grid__cta {
+      text-align: center;
+      margin-top: clamp(2rem, 4vw, 3rem);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       FOUNDER
+       ═══════════════════════════════════════════════════════════ */
+    .founder {
+      background: var(--wine);
+      color: var(--cream);
+    }
+    .founder__grid {
+      display: grid;
+      gap: 3rem;
+      align-items: center;
+    }
+    @media (min-width: 900px) {
+      .founder__grid {
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 4rem;
+      }
+    }
+    .founder__media { position: relative; }
+    .founder__portrait img {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+    }
+    .founder__thumbs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+    }
+    .founder__thumbs .bezel {
+      transition: transform var(--dur-ui) var(--ease-luxury);
+    }
+    @media (min-width: 900px) {
+      .founder__thumbs .bezel:nth-child(1) { transform: rotate(-2deg); }
+      .founder__thumbs .bezel:nth-child(2) { transform: rotate(1.5deg) translateY(6px); }
+      .founder__thumbs .bezel:nth-child(3) { transform: rotate(-1deg); }
+      .founder__thumbs .bezel:nth-child(4) { transform: rotate(2deg) translateY(4px); }
+    }
+    .founder__thumbs img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+    }
+    .founder__copy .eyebrow { margin-bottom: 1rem; }
+    .founder__copy h2 {
+      color: var(--cream);
+      margin-bottom: 1.25rem;
+    }
+    .founder__copy .bio {
+      color: rgba(248, 245, 239, 0.78);
+      font-weight: 300;
+      font-size: 1.05rem;
+      line-height: 1.75;
+      margin-bottom: 1.5rem;
+      max-width: 34rem;
+    }
+    .founder__quote {
+      margin-bottom: 2rem;
+      padding-left: 1.15rem;
+      border-left: 2px solid var(--gold);
+      font-family: var(--font-accent);
+      font-style: italic;
+      font-size: 1.25rem;
+      color: var(--antique-gold);
+      line-height: 1.45;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       KIT RAIL
+       ═══════════════════════════════════════════════════════════ */
+    .kit-rail {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(180px, 200px);
+      gap: 1rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 0.5rem;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(176, 141, 87, 0.4) transparent;
+    }
+    @media (min-width: 1100px) {
+      .kit-rail {
+        grid-auto-flow: unset;
+        grid-template-columns: repeat(5, 1fr);
+        overflow: visible;
+        margin-inline: 0;
+        padding-inline: 0;
+      }
+      .kit-rail .kit-item:nth-child(n + 6) { display: none; }
+    }
+    .kit-item { scroll-snap-align: start; }
+    .kit-item .bezel__core { background: #fff; }
+    .kit-item__img {
+      aspect-ratio: 1;
+      background: rgba(56, 11, 12, 0.03);
+    }
+    .kit-item__img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .kit-item__body { padding: 1rem 1.1rem 1.2rem; }
+    .kit-item__body h4 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      margin-bottom: 0.2rem;
+    }
+    .kit-item__body p {
+      font-size: 0.75rem;
+      font-weight: 300;
+      color: rgba(56, 11, 12, 0.55);
+      line-height: 1.45;
+    }
+    .kit-cta { text-align: center; margin-top: 2.5rem; }
+
+    /* ═══════════════════════════════════════════════════════════
+       JOURNEY
+       ═══════════════════════════════════════════════════════════ */
+    .journey-track {
+      display: grid;
+      gap: 1rem;
+      position: relative;
+    }
+    @media (min-width: 900px) {
+      .journey-track {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.75rem;
+      }
+      .journey-track::before {
+        content: "";
+        position: absolute;
+        top: 2.1rem;
+        left: 6%;
+        right: 6%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(176, 141, 87, 0.45), transparent);
+        z-index: 0;
+      }
+    }
+    .journey-step {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 0.5rem;
+    }
+    .journey-num {
+      width: 2.75rem;
+      height: 2.75rem;
+      margin: 0 auto 0.85rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      color: var(--wine);
+      background: var(--cream-warm);
+      box-shadow:
+        0 0 0 0.35rem rgba(56, 11, 12, 0.03),
+        inset 0 0 0 1px rgba(176, 141, 87, 0.35);
+    }
+    .journey-step h4 {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+    }
+    .journey-step p {
+      font-size: 0.75rem;
+      font-weight: 300;
+      color: rgba(56, 11, 12, 0.6);
+      line-height: 1.45;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       NEWSLETTER
+       ═══════════════════════════════════════════════════════════ */
+    .newsletter {
+      background: radial-gradient(ellipse at 50% 0%, #4a1214 0%, var(--deep-wine) 55%, var(--wine-ink) 100%);
+      color: var(--cream);
+      text-align: center;
+    }
+    .newsletter .section-head h2 { color: var(--cream); }
+    .newsletter .section-head .text-body { color: rgba(248, 245, 239, 0.7); margin-inline: auto; }
+    .newsletter .flourish span { background: rgba(196, 163, 96, 0.4) !important; }
+    .newsletter .flourish i { background: var(--antique-gold) !important; }
+    .newsletter-form-wrap {
+      max-width: 32rem;
+      margin: 0 auto;
+    }
+    .newsletter-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.5rem;
+    }
+    @media (min-width: 560px) {
+      .newsletter-form {
+        flex-direction: row;
+        align-items: center;
+        padding: 0.4rem 0.4rem 0.4rem 0.5rem;
+      }
+    }
+    .newsletter-form input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--cream);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 300;
+      padding: 0.85rem 1.1rem;
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.25);
+      transition: box-shadow var(--dur-ui) var(--ease-luxury);
+    }
+    .newsletter-form input::placeholder { color: rgba(248, 245, 239, 0.4); }
+    .newsletter-form input:focus {
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.55);
+    }
+    .newsletter-form .btn { justify-content: center; white-space: nowrap; }
+
+    /* ═══════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════ */
+    .footer {
+      background: var(--wine-ink);
+      color: var(--cream);
+      padding: clamp(3.5rem, 7vw, 5.5rem) 0 2rem;
+    }
+    .footer__grid {
+      display: grid;
+      gap: 2.5rem;
+      margin-bottom: 3rem;
+    }
+    @media (min-width: 768px) {
+      .footer__grid {
+        grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+        gap: 2rem;
+      }
+    }
+    .footer__brand p {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      font-weight: 300;
+      color: rgba(248, 245, 239, 0.6);
+      line-height: 1.65;
+      max-width: 22rem;
+    }
+    .socials {
+      display: flex;
+      gap: 0.55rem;
+      margin-top: 1.25rem;
+    }
+    .socials a {
+      width: 2.35rem;
+      height: 2.35rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      color: var(--antique-gold);
+      box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.28);
+      transition: background var(--dur-ui) var(--ease-luxury), color var(--dur-ui) var(--ease-luxury);
+    }
+    .socials a:hover {
+      background: rgba(176, 141, 87, 0.12);
+      color: var(--gold);
+    }
+    .socials svg { width: 1rem; height: 1rem; stroke-width: 1.25; }
+    .footer h4 {
+      font-family: var(--font-accent);
+      font-style: italic;
+      font-size: 0.85rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--antique-gold);
+      margin-bottom: 1rem;
+    }
+    .footer ul { display: grid; gap: 0.55rem; }
+    .footer ul a {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(248, 245, 239, 0.7);
+      transition: color var(--dur-ui) var(--ease-luxury);
+    }
+    .footer ul a:hover { color: var(--gold); }
+    .footer__bottom {
+      padding-top: 1.75rem;
+      box-shadow: inset 0 1px 0 rgba(176, 141, 87, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: rgba(248, 245, 239, 0.4);
+    }
+    @media (min-width: 640px) {
+      .footer__bottom { flex-direction: row; }
+    }
+    .footer__legal {
+      display: flex;
+      gap: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .footer__legal a:hover { color: var(--cream); }
+
+    /* Utility */
+    .text-center { text-align: center; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- Promo -->
+  <div class="promo">
+    <span>Complimentary Express Shipping across India on orders over ₹1499</span>
+  </div>
+
+  <!-- Island Nav -->
+  <div class="nav-shell">
+    <header class="nav-island" id="navIsland">
+      <a href="#" class="brand" aria-label="HILO ARTE home">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.5" stroke="#B08D57"/>
+            <circle cx="12" cy="12" r="5.5" stroke="#C4A360" stroke-opacity="0.6"/>
+            <path d="M12 7.5c1.2 1.4 1.8 2.8 1.8 4.5S13.2 15.1 12 16.5c-1.2-1.4-1.8-2.8-1.8-4.5S10.8 8.9 12 7.5z" fill="#B08D57" fill-opacity="0.35" stroke="none"/>
+          </svg>
+        </span>
+        <span>
+          <span class="brand__word">Hilo Arte</span>
+          <span class="brand__tag">Stitch beauty into your life</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#collections">Shop Kits</a>
+        <a href="#collections">Gift Experiences</a>
+        <a href="#journey">Workshops</a>
+        <a href="#kit">Customisation</a>
+        <a href="#bestsellers">Gallery</a>
+        <a href="#founder">Founder Story</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="icon-btn" type="button" aria-label="Open cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 7h15l-1.5 9h-12z"/>
+            <path d="M6 7 5 3H2"/>
+            <circle cx="9" cy="20" r="1"/>
+            <circle cx="18" cy="20" r="1"/>
+          </svg>
+          <span class="cart-count">2</span>
+        </button>
+        <button class="hamburger" id="hamburger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </header>
+  </div>
+
+  <!-- Mobile menu -->
+  <div class="mobile-menu" id="mobileMenu" role="dialog" aria-modal="true" aria-label="Main menu">
+    <div class="mobile-menu__head">
+      <a href="#" class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5" stroke="#B08D57"/></svg>
+        </span>
+        <span class="brand__word">Hilo Arte</span>
+      </a>
+      <button class="icon-btn" id="menuClose" type="button" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <nav class="mobile-menu__nav">
+      <a href="#collections">Shop Kits</a>
+      <a href="#collections">Gift Experiences</a>
+      <a href="#journey">Workshops</a>
+      <a href="#kit">Customisation</a>
+      <a href="#bestsellers">Gallery</a>
+      <a href="#founder">Founder Story</a>
+    </nav>
+    <p class="mobile-menu__foot">“Beautiful things do not need to be rushed.”</p>
+  </div>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" id="top">
+      <div class="moon-ring moon-ring--a" aria-hidden="true"></div>
+      <div class="moon-ring moon-ring--b" aria-hidden="true"></div>
+      <div class="particles" id="particles" aria-hidden="true"></div>
+
+      <div class="container hero__grid">
+        <div class="hero__copy">
+          <span class="eyebrow eyebrow--on-dark reveal">Luxury Creative Experiences</span>
+          <h1 class="font-display text-h1 reveal reveal-d1">Stitch beauty into your quiet moments.</h1>
+          <p class="lead reveal reveal-d2">Beginner embroidery experiences designed to slow down and create — handcrafted kits, guided lessons, and slow-living art from India.</p>
+          <div class="hero__ctas reveal reveal-d3">
+            <a class="btn btn--gold" href="#bestsellers">
+              Start Your First Stitch
+              <span class="btn__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+              </span>
+            </a>
+            <a class="btn btn--outline btn--outline-cream" href="#collections">
+              Explore Gift Experiences
+              <span class="btn__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </span>
+            </a>
+          </div>
+        </div>
+
+        <div class="hero__visual reveal reveal-d2">
+          <div class="bezel bezel--dark">
+            <div class="bezel__core">
+              <img src="../../public/images/hero/hero-fairy-moon.jpg" alt="Fairy stitching on a crescent moon under a starlit sky" width="800" height="1000" />
+              <p class="hero__caption">A quieter hour. A golden thread. A small act of beauty.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLLECTIONS -->
+    <section class="section" id="collections">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Explore the Universe</span>
+          <h2 class="font-display text-h2">Bee-Guided Collections</h2>
+          <div class="flourish" aria-hidden="true"><span></span><i></i><span></span></div>
+          <p class="text-body">Choose your entrance into slow living and quiet creativity.</p>
+        </header>
+
+        <div class="collections-rail">
+          <a class="collection-card reveal" href="#">
+            <div class="bezel"><div class="bezel__core">
+              <img src="../../public/images/collections/diy-kits.jpg" alt="" />
+              <div class="collection-card__body">
+                <h3>DIY Kits</h3>
+                <p>Beautiful kits for every stitcher</p>
+                <div class="collection-card__meta"><span class="link-arrow">Explore →</span></div>
+              </div>
+            </div></div>
+          </a>
+          <a class="collection-card reveal reveal-d1" href="#">
+            <div class="bezel"><div class="bezel__core">
+              <img src="../../public/images/collections/gift-experiences.jpg" alt="" />
+              <div class="collection-card__body">
+                <h3>Gift Experiences</h3>
+                <p>Thoughtful gifts for every occasion</p>
+                <div class="collection-card__meta"><span class="link-arrow">Explore →</span></div>
+              </div>
+            </div></div>
+          </a>
+          <a class="collection-card reveal reveal-d2" href="#">
+            <div class="bezel"><div class="bezel__core">
+              <img src="../../public/images/collections/accessories.jpg" alt="" />
+              <div class="collection-card__body">
+                <h3>Accessories</h3>
+                <p>Curated tools & handmade add-ons</p>
+                <div class="collection-card__meta"><span class="badge">Coming Soon</span></div>
+              </div>
+            </div></div>
+          </a>
+          <a class="collection-card reveal reveal-d3" href="#">
+            <div class="bezel"><div class="bezel__core">
+              <img src="../../public/images/founder/workspace-2.jpg" alt="" />
+              <div class="collection-card__body">
+                <h3>Workshops</h3>
+                <p>Learn together, stitch together</p>
+                <div class="collection-card__meta"><span class="badge">Coming Soon</span></div>
+              </div>
+            </div></div>
+          </a>
+          <a class="collection-card reveal reveal-d4" href="#">
+            <div class="bezel"><div class="bezel__core">
+              <img src="../../public/images/founder/workspace-4.jpg" alt="" />
+              <div class="collection-card__body">
+                <h3>Customisation</h3>
+                <p>Make it uniquely yours</p>
+                <div class="collection-card__meta"><span class="badge">Coming Soon</span></div>
+              </div>
+            </div></div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY HILO BENTO -->
+    <section class="section why" id="why">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Our Philosophy</span>
+          <h2 class="font-display text-h2">Beautiful things do not need to be rushed.</h2>
+          <div class="flourish" aria-hidden="true"><span></span><i></i><span></span></div>
+          <p class="text-body">Every kit is designed to provide a restful, meditative creative pause.</p>
+        </header>
+
+        <div class="bento">
+          <article class="bento__feature reveal">
+            <div class="bezel"><div class="bezel__core">
+              <div class="bento-inner">
+                <span class="icon-shell" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 4 6 7.5 6 11a6 6 0 1 1-12 0c0-3.5 2-7 6-11z"/></svg>
+                </span>
+                <div>
+                  <h3>A quieter ritual for modern evenings.</h3>
+                  <p style="margin-top:0.85rem;max-width:36ch">HILO ARTE is not a craft supply shop. It is a slow-living embroidery experience — premium materials, guided lessons, and the permission to create without hurry.</p>
+                </div>
+                <span class="link-arrow" style="color:var(--gold)">Begin the journey →</span>
+              </div>
+            </div></div>
+          </article>
+
+          <article class="bento__cell reveal reveal-d1">
+            <div class="bezel"><div class="bezel__core"><div class="bento-inner">
+              <span class="icon-shell" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 19c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/></svg></span>
+              <h3>Beginner Friendly</h3>
+              <p>Clear step-by-step guides for zero-experience stitchers.</p>
+            </div></div></div>
+          </article>
+          <article class="bento__cell reveal reveal-d2">
+            <div class="bezel"><div class="bezel__core"><div class="bento-inner">
+              <span class="icon-shell" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="m10 10 5 2.5L10 15v-5z"/></svg></span>
+              <h3>Guided Learning</h3>
+              <p>QR code video lessons for every stitch technique.</p>
+            </div></div></div>
+          </article>
+          <article class="bento__cell reveal reveal-d1">
+            <div class="bezel"><div class="bezel__core"><div class="bento-inner">
+              <span class="icon-shell" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M12 3l1.8 5.5H19l-4.4 3.3 1.7 5.4L12 14.7 7.7 17.2l1.7-5.4L5 8.5h5.2z"/></svg></span>
+              <h3>Handmade In India</h3>
+              <p>Crafted with premium organic linen and silk threads.</p>
+            </div></div></div>
+          </article>
+          <article class="bento__cell reveal reveal-d2">
+            <div class="bezel"><div class="bezel__core"><div class="bento-inner">
+              <span class="icon-shell" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M12 4a6 6 0 0 1 6 6c0 4-6 10-6 10S6 14 6 10a6 6 0 0 1 6-6z"/><circle cx="12" cy="10" r="2"/></svg></span>
+              <h3>Screen-Free Time</h3>
+              <p>A calming tactile ritual for quiet evenings.</p>
+            </div></div></div>
+          </article>
+          <article class="bento__cell reveal reveal-d3">
+            <div class="bezel"><div class="bezel__core"><div class="bento-inner">
+              <span class="icon-shell" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M12 7v10M8 9.5c0-1.5 1.5-2.5 4-2.5s4 1 4 2.5-1.5 2.5-4 2.5-4 1-4 2.5 1.5 2.5 4 2.5 4-1 4-2.5"/></svg></span>
+              <h3>Beautiful Gifting</h3>
+              <p>Delivered in luxury signature presentation boxes.</p>
+            </div></div></div>
+          </article>
+          <article class="bento__cell reveal reveal-d4">
+            <div class="bezel"><div class="bezel__core"><div class="bento-inner">
+              <span class="icon-shell" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 1.5"/></svg></span>
+              <h3>Learn At Your Pace</h3>
+              <p>No deadlines. Stitch whenever you need a pause.</p>
+            </div></div></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- BEST SELLERS -->
+    <section class="section" id="bestsellers">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Most Loved Experiences</span>
+          <h2 class="font-display text-h2">Best Selling Embroidery Kits</h2>
+          <div class="flourish" aria-hidden="true"><span></span><i></i><span></span></div>
+          <p class="text-body">Hand-picked favorites chosen by stitchers beginning their quiet journey.</p>
+        </header>
+
+        <div class="product-grid">
+          <article class="product-card reveal">
+            <div class="bezel"><div class="bezel__core" style="display:flex;flex-direction:column">
+              <div class="product-card__media">
+                <img src="../../public/images/products/blooming-roses-1.jpg" alt="Blooming Roses embroidery kit" />
+                <div class="product-card__badges">
+                  <span class="pill pill--wine">Beginner</span>
+                  <span class="pill pill--cream">4 hrs</span>
+                </div>
+              </div>
+              <div class="product-card__body">
+                <h3>Blooming Roses</h3>
+                <p class="product-card__sub">Vintage rose petals with golden highlights</p>
+                <div class="product-card__foot">
+                  <div>
+                    <div class="price-label">Price</div>
+                    <div class="price">₹1,899</div>
+                  </div>
+                  <button class="btn btn--gold btn--sm" type="button">
+                    Add
+                    <span class="btn__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/></svg>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div></div>
+          </article>
+
+          <article class="product-card reveal reveal-d1">
+            <div class="bezel"><div class="bezel__core" style="display:flex;flex-direction:column">
+              <div class="product-card__media">
+                <img src="../../public/images/products/wildflower-meadow-1.jpg" alt="Wildflower Meadow kit" />
+                <div class="product-card__badges">
+                  <span class="pill pill--wine">Beginner</span>
+                  <span class="pill pill--cream">3.5 hrs</span>
+                </div>
+              </div>
+              <div class="product-card__body">
+                <h3>Wildflower Meadow</h3>
+                <p class="product-card__sub">Gentle botanicals on warm cream linen</p>
+                <div class="product-card__foot">
+                  <div>
+                    <div class="price-label">Price</div>
+                    <div class="price">₹1,699</div>
+                  </div>
+                  <button class="btn btn--gold btn--sm" type="button">
+                    Add
+                    <span class="btn__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/></svg>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div></div>
+          </article>
+
+          <article class="product-card reveal reveal-d2">
+            <div class="bezel"><div class="bezel__core" style="display:flex;flex-direction:column">
+              <div class="product-card__media">
+                <img src="../../public/images/products/moonlit-garden-1.jpg" alt="Moonlit Garden kit" />
+                <div class="product-card__badges">
+                  <span class="pill pill--wine">Intermediate</span>
+                  <span class="pill pill--cream">6 hrs</span>
+                </div>
+              </div>
+              <div class="product-card__body">
+                <h3>Moonlit Garden</h3>
+                <p class="product-card__sub">Deep wine linen with gold crescent accents</p>
+                <div class="product-card__foot">
+                  <div>
+                    <div class="price-label">Price</div>
+                    <div class="price">₹2,199</div>
+                  </div>
+                  <button class="btn btn--gold btn--sm" type="button">
+                    Add
+                    <span class="btn__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/></svg>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div></div>
+          </article>
+
+          <article class="product-card reveal reveal-d3">
+            <div class="bezel"><div class="bezel__core" style="display:flex;flex-direction:column">
+              <div class="product-card__media">
+                <img src="../../public/images/products/lavender-dreams-1.jpg" alt="Lavender Dreams kit" />
+                <div class="product-card__badges">
+                  <span class="pill pill--wine">Beginner</span>
+                  <span class="pill pill--cream">4 hrs</span>
+                </div>
+              </div>
+              <div class="product-card__body">
+                <h3>Lavender Dreams</h3>
+                <p class="product-card__sub">Soft lavender sprigs and quiet dusk tones</p>
+                <div class="product-card__foot">
+                  <div>
+                    <div class="price-label">Price</div>
+                    <div class="price">₹1,599</div>
+                  </div>
+                  <button class="btn btn--gold btn--sm" type="button">
+                    Add
+                    <span class="btn__icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/></svg>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div></div>
+          </article>
+        </div>
+
+        <div class="product-grid__cta reveal">
+          <a class="btn btn--wine" href="#">
+            View All DIY Kits
+            <span class="btn__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOUNDER -->
+    <section class="section founder" id="founder">
+      <div class="container founder__grid">
+        <div class="founder__media reveal">
+          <div class="bezel bezel--dark founder__portrait">
+            <div class="bezel__core">
+              <img src="../../public/images/founder/naima-portrait.jpg" alt="Naima, founder of HILO ARTE, in her studio" />
+            </div>
+          </div>
+          <div class="founder__thumbs">
+            <div class="bezel bezel--dark"><div class="bezel__core"><img src="../../public/images/founder/workspace-1.jpg" alt="" /></div></div>
+            <div class="bezel bezel--dark"><div class="bezel__core"><img src="../../public/images/founder/workspace-2.jpg" alt="" /></div></div>
+            <div class="bezel bezel--dark"><div class="bezel__core"><img src="../../public/images/founder/workspace-3.jpg" alt="" /></div></div>
+            <div class="bezel bezel--dark"><div class="bezel__core"><img src="../../public/images/founder/workspace-4.jpg" alt="" /></div></div>
+          </div>
+        </div>
+
+        <div class="founder__copy reveal reveal-d2">
+          <span class="eyebrow eyebrow--on-dark">Our Story</span>
+          <h2 class="font-display text-h2">Meet the hands behind HILO ARTE.</h2>
+          <p class="bio">Hi, I’m Naima. What began with a simple thread slowly became a world of stitches, florals, quiet moments, and handmade stories. HILO ARTE was created for anyone looking to make something beautiful with their own hands.</p>
+          <blockquote class="founder__quote">“Every kit is designed for beginners, busy people, curious minds, and gift givers.”</blockquote>
+          <a class="btn btn--gold" href="#">
+            Read Our Story
+            <span class="btn__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- KIT CONTENTS -->
+    <section class="section" id="kit">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Unboxing the Experience</span>
+          <h2 class="font-display text-h2">What’s Inside Your Kit</h2>
+          <div class="flourish" aria-hidden="true"><span></span><i></i><span></span></div>
+          <p class="text-body">Everything you need to complete your artwork, beautifully packaged in our signature box.</p>
+        </header>
+
+        <div class="kit-rail">
+          <article class="kit-item reveal"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/linen.jpg" alt="Printed linen" /></div>
+            <div class="kit-item__body"><h4>Printed Linen</h4><p>Pre-printed water-soluble pattern</p></div>
+          </div></div></article>
+          <article class="kit-item reveal reveal-d1"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/hoop.jpg" alt="Wooden hoop" /></div>
+            <div class="kit-item__body"><h4>Wooden Hoop</h4><p>6-inch beechwood with gold screw</p></div>
+          </div></div></article>
+          <article class="kit-item reveal reveal-d2"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/threads.jpg" alt="Silk threads" /></div>
+            <div class="kit-item__body"><h4>Silk Threads</h4><p>Full DMC skeins in curated shades</p></div>
+          </div></div></article>
+          <article class="kit-item reveal reveal-d3"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/needles.jpg" alt="Needles" /></div>
+            <div class="kit-item__body"><h4>Tapestry Needles</h4><p>2× Japanese nickel-plated needles</p></div>
+          </div></div></article>
+          <article class="kit-item reveal reveal-d4"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/minder.jpg" alt="Bee needle minder" /></div>
+            <div class="kit-item__body"><h4>Bee Needle Minder</h4><p>Bespoke enamel magnet accessory</p></div>
+          </div></div></article>
+          <article class="kit-item reveal"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/guide.jpg" alt="Guidebook" /></div>
+            <div class="kit-item__body"><h4>Guidebook</h4><p>Full-color printed booklet</p></div>
+          </div></div></article>
+          <article class="kit-item reveal reveal-d1"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/qr.jpg" alt="QR lessons" /></div>
+            <div class="kit-item__body"><h4>QR Video Lessons</h4><p>Slow-motion stitch tutorials</p></div>
+          </div></div></article>
+          <article class="kit-item reveal reveal-d2"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/card.jpg" alt="Instruction card" /></div>
+            <div class="kit-item__body"><h4>Instruction Card</h4><p>Quick-start guide card</p></div>
+          </div></div></article>
+          <article class="kit-item reveal reveal-d3"><div class="bezel"><div class="bezel__core">
+            <div class="kit-item__img"><img src="../../public/images/kit-contents/folder.jpg" alt="Travel folder" /></div>
+            <div class="kit-item__body"><h4>Travel Folder</h4><p>Keep materials organized</p></div>
+          </div></div></article>
+        </div>
+
+        <div class="kit-cta reveal">
+          <a class="btn btn--outline" href="#">
+            View Complete Kit Specs
+            <span class="btn__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- JOURNEY -->
+    <section class="section" id="journey" style="background: rgba(168,179,154,0.08)">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">From Box to Beauty</span>
+          <h2 class="font-display text-h2">Your Creative Journey</h2>
+          <div class="flourish" aria-hidden="true"><span></span><i></i><span></span></div>
+          <p class="text-body">Seven gentle steps from unboxing to sharing your finished artwork.</p>
+        </header>
+
+        <ol class="journey-track">
+          <li class="journey-step reveal"><div class="journey-num">1</div><h4>Choose Your Kit</h4><p>Pick a pattern that speaks to your quiet mood.</p></li>
+          <li class="journey-step reveal reveal-d1"><div class="journey-num">2</div><h4>Open Your Box</h4><p>Unwrap the signature presentation and linen.</p></li>
+          <li class="journey-step reveal reveal-d2"><div class="journey-num">3</div><h4>Scan QR Lessons</h4><p>Watch slow-motion guides on your phone.</p></li>
+          <li class="journey-step reveal reveal-d3"><div class="journey-num">4</div><h4>Learn Stitches</h4><p>Master basics with ease and comfort.</p></li>
+          <li class="journey-step reveal reveal-d1"><div class="journey-num">5</div><h4>Complete Artwork</h4><p>Watch florals come alive stitch by stitch.</p></li>
+          <li class="journey-step reveal reveal-d2"><div class="journey-num">6</div><h4>Frame It</h4><p>Tighten the hoop or display in wood.</p></li>
+          <li class="journey-step reveal reveal-d3"><div class="journey-num">7</div><h4>Share Your Story</h4><p>Join our quiet community of makers.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- NEWSLETTER -->
+    <section class="section newsletter" id="newsletter">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow eyebrow--on-dark">The Quiet Letter</span>
+          <h2 class="font-display text-h2">Receive gentle thoughts on slow creative living.</h2>
+          <div class="flourish" aria-hidden="true"><span></span><i></i><span></span></div>
+          <p class="text-body">No spam or noisy promotions. Just seasonal patterns, tea pairings, and early access to handcrafted releases.</p>
+        </header>
+
+        <div class="newsletter-form-wrap reveal reveal-d2">
+          <div class="bezel bezel--dark">
+            <div class="bezel__core">
+              <form class="newsletter-form" id="newsletterForm" action="#" method="post">
+                <label class="sr-only" for="email">Email address</label>
+                <input id="email" name="email" type="email" required placeholder="Enter your email…" autocomplete="email" />
+                <button class="btn btn--gold" type="submit">
+                  Subscribe
+                  <span class="btn__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                  </span>
+                </button>
+              </form>
+            </div>
+          </div>
+          <p id="newsletterThanks" class="font-accent" style="display:none;margin-top:1rem;color:var(--antique-gold);font-style:italic;font-size:1.1rem">
+            Thank you. Your quiet letter will arrive soon.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <a href="#" class="brand">
+            <span class="brand__mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5" stroke="#B08D57"/></svg>
+            </span>
+            <span class="brand__word">Hilo Arte</span>
+          </a>
+          <p>A premium, slow-living luxury creative brand selling beginner embroidery experiences and gift moments across India.</p>
+          <div class="socials">
+            <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none"/></svg></a>
+            <a href="#" aria-label="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></a>
+            <a href="#" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M7 19.5 5 21v-3.2A8.5 8.5 0 1 1 12 20.5c-1.3 0-2.6-.3-3.7-.8L7 19.5z"/></svg></a>
+          </div>
+        </div>
+        <div>
+          <h4>Shop</h4>
+          <ul>
+            <li><a href="#">DIY Embroidery Kits</a></li>
+            <li><a href="#">Gift Experiences</a></li>
+            <li><a href="#">Accessories</a></li>
+            <li><a href="#">Workshops</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>About & Help</h4>
+          <ul>
+            <li><a href="#">Brand Philosophy</a></li>
+            <li><a href="#founder">Founder Story</a></li>
+            <li><a href="#">FAQ & Support</a></li>
+            <li><a href="#">Shipping & Returns</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Quiet Letters</h4>
+          <ul>
+            <li><a href="#newsletter">Join the newsletter</a></li>
+            <li><a href="#">hello@hiloarte.com</a></li>
+            <li><a href="#">+91 98765 43210</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>© <span id="year"></span> HILO ARTE. All rights reserved. · Editorial Luxury mockup</p>
+        <div class="footer__legal">
+          <a href="#">Privacy</a>
+          <a href="#">Refunds</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // Year
+      var yearEl = document.getElementById("year");
+      if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+      // Particles
+      var particles = document.getElementById("particles");
+      if (particles && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        for (var i = 0; i < 14; i++) {
+          var p = document.createElement("span");
+          p.className = "particle";
+          p.style.top = ((i * 17) % 100) + "%";
+          p.style.left = ((i * 23) % 100) + "%";
+          p.style.animationDuration = (3.5 + (i % 5) * 0.6) + "s";
+          p.style.animationDelay = (i * 0.28) + "s";
+          particles.appendChild(p);
+        }
+      }
+
+      // Island nav scroll state
+      var nav = document.getElementById("navIsland");
+      function onScroll() {
+        if (!nav) return;
+        if (window.scrollY > 24) nav.classList.add("is-scrolled");
+        else nav.classList.remove("is-scrolled");
+      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+
+      // Mobile menu
+      var hamburger = document.getElementById("hamburger");
+      var menu = document.getElementById("mobileMenu");
+      var menuClose = document.getElementById("menuClose");
+
+      function openMenu() {
+        if (!menu || !hamburger) return;
+        menu.classList.add("is-open");
+        hamburger.classList.add("is-open");
+        hamburger.setAttribute("aria-expanded", "true");
+        document.body.style.overflow = "hidden";
+      }
+      function closeMenu() {
+        if (!menu || !hamburger) return;
+        menu.classList.remove("is-open");
+        hamburger.classList.remove("is-open");
+        hamburger.setAttribute("aria-expanded", "false");
+        document.body.style.overflow = "";
+      }
+
+      if (hamburger) hamburger.addEventListener("click", function () {
+        if (menu && menu.classList.contains("is-open")) closeMenu();
+        else openMenu();
+      });
+      if (menuClose) menuClose.addEventListener("click", closeMenu);
+      if (menu) {
+        menu.querySelectorAll("a").forEach(function (a) {
+          a.addEventListener("click", closeMenu);
+        });
+      }
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeMenu();
+      });
+
+      // Reveal on scroll
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var reveals = document.querySelectorAll(".reveal");
+      if (reduce) {
+        reveals.forEach(function (el) { el.classList.add("is-visible"); });
+      } else if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              io.unobserve(entry.target);
+            }
+          });
+        }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+        reveals.forEach(function (el) { io.observe(el); });
+      } else {
+        reveals.forEach(function (el) { el.classList.add("is-visible"); });
+      }
+
+      // Newsletter fake submit
+      var form = document.getElementById("newsletterForm");
+      var thanks = document.getElementById("newsletterThanks");
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          form.style.display = "none";
+          if (thanks) thanks.style.display = "block";
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

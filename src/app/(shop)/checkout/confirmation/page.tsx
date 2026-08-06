@@ -7,12 +7,12 @@ import { CheckCircle2 } from 'lucide-react';
 
 export default function ConfirmationPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
       <main className="flex-1 pt-32 pb-20 flex items-center justify-center">
         <Container size="sm">
-          <div className="bg-white p-8 sm:p-12 rounded-2xl border border-wine/10 text-center space-y-6 shadow-wine-sm">
+          <div className="bg-white p-8 sm:p-12 rounded-2xl ring-1 ring-wine/5 text-center space-y-6 shadow-wine-sm">
             <div className="w-16 h-16 bg-wine/5 rounded-full flex items-center justify-center text-gold mx-auto border border-gold/30">
               <CheckCircle2 className="w-10 h-10 stroke-[1.5]" />
             </div>

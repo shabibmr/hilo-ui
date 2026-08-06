@@ -13,10 +13,10 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container>
           <SectionHeading
             eyebrow="REACH OUR STUDIO"
@@ -27,7 +27,7 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-5xl mx-auto">
             {/* Direct Contact Channels */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="bg-white p-6 rounded-2xl border border-wine/10 flex items-start gap-4">
+              <div className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-wine/5 flex items-center justify-center text-gold flex-shrink-0">
                   <Mail className="w-6 h-6" />
                 </div>
@@ -38,7 +38,7 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-wine/10 flex items-start gap-4">
+              <div className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-wine/5 flex items-center justify-center text-gold flex-shrink-0">
                   <MessageCircle className="w-6 h-6" />
                 </div>
@@ -49,7 +49,7 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-wine/10 flex items-start gap-4">
+              <div className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-wine/5 flex items-center justify-center text-gold flex-shrink-0">
                   <Globe className="w-6 h-6" />
                 </div>
@@ -61,7 +61,7 @@ export default function ContactPage() {
             </div>
 
             {/* Interactive Contact Form */}
-            <div className="lg:col-span-7 bg-white p-8 sm:p-10 rounded-2xl border border-wine/10 shadow-wine-sm">
+            <div className="lg:col-span-7 bg-white p-8 sm:p-10 rounded-2xl ring-1 ring-wine/5 shadow-wine-sm">
               {submitted ? (
                 <div className="p-8 text-center space-y-4 animate-fadeIn">
                   <CheckCircle className="w-12 h-12 text-gold mx-auto" />
@@ -83,25 +83,25 @@ export default function ContactPage() {
                       type="text"
                       placeholder="Your Name"
                       required
-                      className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                     />
                     <input
                       type="email"
                       placeholder="Email Address"
                       required
-                      className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                     />
                   </div>
                   <input
                     type="text"
                     placeholder="Subject / Order Number (Optional)"
-                    className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                    className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                   />
                   <textarea
                     placeholder="How can we assist your quiet journey today?"
                     rows={5}
                     required
-                    className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                    className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                   />
                   <CtaButton type="submit" fullWidth size="lg">
                     Send Message

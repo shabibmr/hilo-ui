@@ -15,7 +15,7 @@ export const BestSellersSection: React.FC<BestSellersSectionProps> = ({ products
     <Section variant="cream" id="bestsellers">
       <Container>
         <SectionHeading
-          eyebrow="MOST LOVED EXPERIENCES"
+          eyebrow="Most Loved Experiences"
           headline="Best Selling Embroidery Kits"
           subheadline="Hand-picked favorites chosen by stitchers beginning their quiet journey."
         />

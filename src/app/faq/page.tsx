@@ -31,10 +31,10 @@ const FAQ_CATEGORIES = [
 
 export default function FaqPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container size="sm">
           <SectionHeading
             eyebrow="HELP & GUIDANCE"
@@ -50,7 +50,7 @@ export default function FaqPage() {
                 </h3>
                 <div className="space-y-4 pt-2">
                   {cat.items.map((item, i) => (
-                    <div key={i} className="bg-white p-6 rounded-xl border border-wine/10 space-y-2">
+                    <div key={i} className="bg-white p-6 rounded-xl ring-1 ring-wine/5 space-y-2">
                       <h4 className="font-display text-lg font-medium text-wine">{item.q}</h4>
                       <p className="font-body text-sm text-wine/70 font-light leading-relaxed">{item.a}</p>
                     </div>

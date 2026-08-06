@@ -16,10 +16,10 @@ export default function CustomisationPage() {
   const [submitted, setSubmitted] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream text-wine font-body">
+    <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="solid" />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main className="flex-1 pt-10 pb-20">
         <Container>
           <SectionHeading
             eyebrow="BESPOKE EMBROIDERY"
@@ -29,7 +29,7 @@ export default function CustomisationPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-5xl mx-auto">
             {/* Live Interactive Preview */}
-            <div className="lg:col-span-5 bg-white p-8 rounded-2xl border border-wine/10 flex flex-col items-center justify-center text-center space-y-6 shadow-wine-sm">
+            <div className="lg:col-span-5 bg-white p-8 rounded-2xl ring-1 ring-wine/5 flex flex-col items-center justify-center text-center space-y-6 shadow-wine-sm">
               <div className="w-64 h-64 rounded-full border-4 border-gold/40 bg-cream flex flex-col items-center justify-center relative shadow-inner">
                 <span className="font-display text-7xl font-bold text-wine tracking-wider">
                   {monogram || 'H'}
@@ -44,7 +44,7 @@ export default function CustomisationPage() {
             </div>
 
             {/* Customization Controls Form */}
-            <div className="lg:col-span-7 bg-white p-8 sm:p-10 rounded-2xl border border-wine/10">
+            <div className="lg:col-span-7 bg-white p-8 sm:p-10 rounded-2xl ring-1 ring-wine/5">
               {submitted ? (
                 <div className="p-8 text-center space-y-4 animate-fadeIn">
                   <CheckCircle className="w-12 h-12 text-gold mx-auto" />
@@ -71,7 +71,7 @@ export default function CustomisationPage() {
                       value={monogram}
                       onChange={(e) => setMonogram(e.target.value.toUpperCase())}
                       placeholder="e.g. N or H&A"
-                      className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm font-display text-lg uppercase tracking-wider"
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm font-display text-lg uppercase tracking-wider"
                       required
                     />
                   </div>
@@ -105,7 +105,7 @@ export default function CustomisationPage() {
                     <select
                       value={threadPalette}
                       onChange={(e) => setThreadPalette(e.target.value)}
-                      className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm text-wine"
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm text-wine"
                     >
                       <option value="Vintage Rose & Gold">Vintage Rose & Metallic Gold</option>
                       <option value="Moonlit Silver & Indigo">Moonlit Silver & Indigo</option>
@@ -121,7 +121,7 @@ export default function CustomisationPage() {
                       type="email"
                       required
                       placeholder="your.email@domain.com"
-                      className="w-full bg-cream/50 border border-wine/20 rounded-md p-3 text-sm"
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
                     />
                   </div>
 
