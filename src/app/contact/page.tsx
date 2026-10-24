@@ -1,16 +1,69 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/commerce/cart-drawer';
 import { Container } from '@/components/common/container';
 import { SectionHeading } from '@/components/common/section-heading';
 import { CtaButton } from '@/components/common/cta-button';
-import { Mail, MessageCircle, Globe, CheckCircle } from 'lucide-react';
+import { Mail, MessageCircle, Globe, CheckCircle, Loader2 } from 'lucide-react';
+import { contentRepository } from '@/lib/data/providers';
+import type { SiteSettings } from '@/lib/data/types';
 
 export default function ContactPage() {
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentRepository
+      .getSiteSettings()
+      .then((data) => {
+        if (active) setSettings(data);
+      })
+      .catch((err) => {
+        console.warn('Could not load site settings on contact page:', err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !message.trim()) return;
+
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const fullMessage = subject.trim() ? `[Subject: ${subject.trim()}]\n\n${message.trim()}` : message.trim();
+      await contentRepository.submitEnquiry({
+        name: name.trim(),
+        email: email.trim(),
+        message: fullMessage,
+        kind: 'contact',
+      });
+      setSubmitted(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to send message. Please try again.';
+      setErrorMsg(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const storeEmail = settings?.store?.email || 'hello@hiloarte.com';
+  const storePhone = settings?.social?.whatsapp || settings?.store?.phone || '+91 98200 11024';
+  const whatsappClean = storePhone.replace(/[^0-9]/g, '');
+  const storeAddress = settings?.store?.address || 'Studio 4, 18 Hill Road, Bandra West, Mumbai 400050';
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
@@ -27,27 +80,39 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-5xl mx-auto">
             {/* Direct Contact Channels */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4">
+              <a
+                href={`mailto:${storeEmail}`}
+                className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4 hover:ring-gold/30 transition-all block"
+              >
                 <div className="w-12 h-12 rounded-xl bg-wine/5 flex items-center justify-center text-gold flex-shrink-0">
                   <Mail className="w-6 h-6" />
                 </div>
                 <div>
                   <h4 className="font-display text-lg font-medium text-wine">Email Studio</h4>
-                  <p className="text-xs text-wine/60 font-light mt-0.5">hello@hiloarte.com</p>
-                  <span className="text-[11px] text-gold font-accent italic mt-1 block">Replies within 12 hours</span>
+                  <p className="text-xs text-wine/60 font-light mt-0.5">{storeEmail}</p>
+                  <span className="text-[11px] text-gold font-accent italic mt-1 block">
+                    Replies within 12 hours
+                  </span>
                 </div>
-              </div>
+              </a>
 
-              <div className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4">
+              <a
+                href={`https://wa.me/${whatsappClean}`}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4 hover:ring-gold/30 transition-all block"
+              >
                 <div className="w-12 h-12 rounded-xl bg-wine/5 flex items-center justify-center text-gold flex-shrink-0">
                   <MessageCircle className="w-6 h-6" />
                 </div>
                 <div>
                   <h4 className="font-display text-lg font-medium text-wine">WhatsApp Concierge</h4>
-                  <p className="text-xs text-wine/60 font-light mt-0.5">+91 98765 43210</p>
-                  <span className="text-[11px] text-gold font-accent italic mt-1 block">Available Mon–Sat, 10am–7pm IST</span>
+                  <p className="text-xs text-wine/60 font-light mt-0.5">{storePhone}</p>
+                  <span className="text-[11px] text-gold font-accent italic mt-1 block">
+                    Available Mon–Sat, 10am–7pm IST
+                  </span>
                 </div>
-              </div>
+              </a>
 
               <div className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-wine/5 flex items-center justify-center text-gold flex-shrink-0">
@@ -55,7 +120,12 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h4 className="font-display text-lg font-medium text-wine">Studio Location</h4>
-                  <p className="text-xs text-wine/60 font-light mt-0.5">Jaipur, Rajasthan, India</p>
+                  <p className="text-xs text-wine/60 font-light mt-0.5">{storeAddress}</p>
+                  {settings?.store?.hours && (
+                    <span className="text-[11px] text-gold font-accent italic mt-1 block">
+                      {settings.store.hours}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -67,44 +137,72 @@ export default function ContactPage() {
                   <CheckCircle className="w-12 h-12 text-gold mx-auto" />
                   <h3 className="font-display text-2xl text-wine">Message Received</h3>
                   <p className="text-sm text-wine/70 font-light">
-                    Thank you for reaching out. A member of our studio team will respond to your message shortly.
+                    Thank you for reaching out, {name}. A member of our studio team will review your
+                    inquiry and respond shortly.
                   </p>
+                  <button
+                    onClick={() => {
+                      setSubmitted(false);
+                      setName('');
+                      setEmail('');
+                      setSubject('');
+                      setMessage('');
+                    }}
+                    className="mt-4 text-xs font-semibold uppercase tracking-wider text-gold hover:text-wine underline"
+                  >
+                    Send another message
+                  </button>
                 </div>
               ) : (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setSubmitted(true);
-                  }}
-                  className="space-y-4"
-                >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {errorMsg && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+                      {errorMsg}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <input
                       type="text"
                       placeholder="Your Name"
                       required
-                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold"
                     />
                     <input
                       type="email"
                       placeholder="Email Address"
                       required
-                      className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-cream/50 border border-wine/20 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold"
                     />
                   </div>
                   <input
                     type="text"
                     placeholder="Subject / Order Number (Optional)"
-                    className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="w-full bg-cream/50 border border-wine/20 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold"
                   />
                   <textarea
                     placeholder="How can we assist your quiet journey today?"
                     rows={5}
                     required
-                    className="w-full bg-cream/50 border border-wine/20 rounded-full p-3 text-sm"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="w-full bg-cream/50 border border-wine/20 rounded-2xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold resize-none"
                   />
-                  <CtaButton type="submit" fullWidth size="lg">
-                    Send Message
+                  <CtaButton type="submit" fullWidth size="lg" disabled={submitting}>
+                    {submitting ? (
+                      <span className="flex items-center justify-center space-x-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending Message...</span>
+                      </span>
+                    ) : (
+                      'Send Message'
+                    )}
                   </CtaButton>
                 </form>
               )}

@@ -1,12 +1,38 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { HoopLogo } from '../common/hoop-logo';
 import { Container } from '../common/container';
 import { Mail, MessageCircle, Camera } from 'lucide-react';
+import { contentRepository } from '@/lib/data/providers';
+import type { SiteSettings } from '@/lib/data/types';
 
 export const Footer: React.FC = () => {
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    contentRepository
+      .getSiteSettings()
+      .then((data) => {
+        if (active) setSettings(data);
+      })
+      .catch((err) => {
+        console.warn('Could not load footer site settings:', err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const instagramUrl = settings?.social?.instagram || 'https://instagram.com/hiloarte';
+  const emailAddress = settings?.store?.email || 'hello@hiloarte.com';
+  const whatsappNumber = settings?.social?.whatsapp || '+91 98200 11024';
+  const whatsappClean = whatsappNumber.replace(/[^0-9]/g, '');
+  const gstin = settings?.store?.gstin || '27AAPFH1842Q1Z5';
+
   return (
     <footer className="bg-wine-ink text-cream pt-20 pb-10 relative overflow-hidden">
       <Container>
@@ -17,9 +43,14 @@ export const Footer: React.FC = () => {
               A premium, slow-living luxury creative brand selling beginner embroidery experiences
               and gift moments across India.
             </p>
+            {settings?.store?.address && (
+              <p className="font-body text-[11px] text-cream/50 leading-relaxed font-light">
+                {settings.store.address}
+              </p>
+            )}
             <div className="flex items-center gap-2.5 text-antique-gold pt-2">
               <a
-                href="https://instagram.com"
+                href={instagramUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="w-9 h-9 rounded-full ring-1 ring-gold/30 flex items-center justify-center hover:bg-gold/10 hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
@@ -28,14 +59,14 @@ export const Footer: React.FC = () => {
                 <Camera className="w-4 h-4" strokeWidth={1.25} />
               </a>
               <a
-                href="mailto:hello@hiloarte.com"
+                href={`mailto:${emailAddress}`}
                 className="w-9 h-9 rounded-full ring-1 ring-gold/30 flex items-center justify-center hover:bg-gold/10 hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 aria-label="Email"
               >
                 <Mail className="w-4 h-4" strokeWidth={1.25} />
               </a>
               <a
-                href="https://wa.me/"
+                href={`https://wa.me/${whatsappClean}`}
                 target="_blank"
                 rel="noreferrer"
                 className="w-9 h-9 rounded-full ring-1 ring-gold/30 flex items-center justify-center hover:bg-gold/10 hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
@@ -72,15 +103,15 @@ export const Footer: React.FC = () => {
                   href="/collections/accessories"
                   className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 >
-                  Accessories
+                  Embroidery Accessories
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/workshops"
+                  href="/collections/all"
                   className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 >
-                  Workshops
+                  All Products
                 </Link>
               </li>
             </ul>
@@ -88,17 +119,9 @@ export const Footer: React.FC = () => {
 
           <div className="space-y-3">
             <h4 className="font-accent italic text-sm tracking-[0.16em] text-antique-gold uppercase">
-              About & Help
+              Brand
             </h4>
             <ul className="space-y-2.5 text-[11px] font-body tracking-[0.12em] uppercase text-cream/70">
-              <li>
-                <Link
-                  href="/about"
-                  className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
-                >
-                  Brand Philosophy
-                </Link>
-              </li>
               <li>
                 <Link
                   href="/founder-story"
@@ -109,10 +132,26 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
-                  href="/faq"
+                  href="/whats-inside"
                   className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 >
-                  FAQ & Support
+                  What&apos;s Inside The Box
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/gallery"
+                  className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                >
+                  Patron Gallery
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                >
+                  Studio Contact
                 </Link>
               </li>
               <li>
@@ -151,7 +190,10 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="pt-8 ring-1 ring-inset ring-transparent border-t border-gold/15 flex flex-col sm:flex-row items-center justify-between text-[11px] text-cream/40 font-body gap-4">
-          <p>© {new Date().getFullYear()} HILO ARTE. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} {settings?.store?.name || 'HILO ARTE'}. All rights
+            reserved. {gstin ? `• GSTIN: ${gstin}` : ''}
+          </p>
           <div className="flex gap-6 uppercase tracking-[0.12em]">
             <Link
               href="/policies/privacy"

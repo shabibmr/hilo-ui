@@ -10,24 +10,43 @@ import { FounderTeaserSection } from '@/components/sections/founder-teaser-secti
 import { KitContentsSection } from '@/components/sections/kit-contents-section';
 import { CreativeJourneySection } from '@/components/sections/creative-journey-section';
 import { NewsletterSection } from '@/components/sections/newsletter-section';
+import { DataErrorState } from '@/components/common/error-retry';
+import type { HomepageContent, Product } from '@/lib/data/types';
+import { MOCK_HOMEPAGE_CONTENT } from '@/lib/data/mock/homepage-content';
 
 export default async function HomePage() {
-  const content = await contentRepository.getHomepageContent();
-  const bestSellers = await commerceRepository.getBestSellers();
+  let content: HomepageContent = MOCK_HOMEPAGE_CONTENT;
+  let bestSellers: Product[] = [];
+  let error: string | null = null;
+
+  try {
+    content = await contentRepository.getHomepageContent();
+    bestSellers = await commerceRepository.getBestSellers();
+  } catch (err: unknown) {
+    error = err instanceof Error ? err.message : 'Unable to connect to live studio catalog.';
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
       <Header variant="overlay" />
 
       <main className="flex-1">
-        <HeroSection content={content.hero} />
-        <CollectionsNavSection items={content.collectionsNav} />
-        <WhyHiloSection cards={content.whyHiloCards} />
-        <BestSellersSection products={bestSellers} />
-        <FounderTeaserSection content={content.founderTeaser} />
-        <KitContentsSection items={content.kitContentsItems} />
-        <CreativeJourneySection steps={content.creativeJourneySteps} />
-        <NewsletterSection />
+        {error ? (
+          <div className="py-24">
+            <DataErrorState message={error} />
+          </div>
+        ) : (
+          <>
+            <HeroSection content={content.hero} />
+            <CollectionsNavSection items={content.collectionsNav} />
+            <WhyHiloSection cards={content.whyHiloCards} />
+            <BestSellersSection products={bestSellers} />
+            <FounderTeaserSection content={content.founderTeaser} />
+            <KitContentsSection items={content.kitContentsItems} />
+            <CreativeJourneySection steps={content.creativeJourneySteps} />
+            <NewsletterSection />
+          </>
+        )}
       </main>
 
       <Footer />

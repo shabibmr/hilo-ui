@@ -118,3 +118,37 @@ export interface HomepageContent {
     icon: string;
   }[];
 }
+
+
+export interface StoreProfile {
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  hours: string;
+  gstin: string;
+}
+
+export interface SocialLinks {
+  instagram: string;
+  pinterest: string;
+  whatsapp: string;
+}
+
+export interface SiteSettings {
+  id: number;
+  hero: {
+    eyebrow: string;
+    headline: string;
+    subheadline: string;
+    primaryCtaText: string;
+    primaryCtaLink: string;
+    secondaryCtaText: string;
+    secondaryCtaLink: string;
+    backgroundImage: ImageAsset | null;
+  };
+  store: StoreProfile;
+  social: SocialLinks;
+  announcement: string | null;
+  updated_at: string;
+}

@@ -20,7 +20,7 @@ export const AnimeBeeCompanion: React.FC<AnimeBeeCompanionProps> = ({
   const bubbleRef = useRef<HTMLDivElement>(null);
 
   const [bubbleText, setBubbleText] = useState("Come, let me show you.");
-  const [isBubbleVisible, setIsBubbleVisible] = useState(true);
+  const [isBubbleVisible] = useState(true);
   const prefersReducedMotion = useReducedMotion();
 
   // Position state for mouse tracking & spring lerp

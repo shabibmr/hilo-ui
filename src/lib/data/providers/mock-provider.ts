@@ -1,5 +1,5 @@
 import { CommerceRepository, ContentRepository } from '../repository';
-import { Product, Collection, Cart, HomepageContent, FounderStoryContent } from '../types';
+import { Product, Collection, Cart, HomepageContent, FounderStoryContent, SiteSettings } from '../types';
 import { MOCK_PRODUCTS } from '../mock/products';
 import { MOCK_COLLECTIONS } from '../mock/collections';
 import { MOCK_FOUNDER_STORY } from '../mock/founder';
@@ -131,5 +131,45 @@ export class MockContentRepository implements ContentRepository {
 
   async getFounderStory(): Promise<FounderStoryContent> {
     return MOCK_FOUNDER_STORY;
+  }
+
+  async getSiteSettings(): Promise<SiteSettings> {
+    return {
+      id: 1,
+      hero: {
+        eyebrow: MOCK_HOMEPAGE_CONTENT.hero.eyebrow,
+        headline: MOCK_HOMEPAGE_CONTENT.hero.headline,
+        subheadline: MOCK_HOMEPAGE_CONTENT.hero.subheadline,
+        primaryCtaText: MOCK_HOMEPAGE_CONTENT.hero.primaryCtaText,
+        primaryCtaLink: MOCK_HOMEPAGE_CONTENT.hero.primaryCtaLink,
+        secondaryCtaText: MOCK_HOMEPAGE_CONTENT.hero.secondaryCtaText,
+        secondaryCtaLink: MOCK_HOMEPAGE_CONTENT.hero.secondaryCtaLink,
+        backgroundImage: MOCK_HOMEPAGE_CONTENT.hero.backgroundImage,
+      },
+      store: {
+        name: 'Hilo Arte',
+        address: 'Studio 4, 18 Hill Road, Bandra West, Mumbai 400050',
+        phone: '+91 22 4893 2210',
+        email: 'hello@hiloarte.com',
+        hours: 'Tuesday to Saturday, 11:00 to 18:00',
+        gstin: '27AAPFH1842Q1Z5',
+      },
+      social: {
+        instagram: 'https://instagram.com/hiloarte',
+        pinterest: 'https://pinterest.com/hiloarte',
+        whatsapp: '+91 98200 11024',
+      },
+      announcement: 'Complimentary Express Shipping across India on orders over ₹1499',
+      updated_at: new Date().toISOString(),
+    };
+  }
+
+  async submitEnquiry(input: {
+    name: string;
+    email: string;
+    message: string;
+    kind?: 'contact' | 'workshop';
+  }): Promise<void> {
+    console.log('[MockContentRepository] Enquiry received:', input);
   }
 }

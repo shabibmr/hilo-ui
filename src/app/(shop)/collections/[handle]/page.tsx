@@ -6,6 +6,8 @@ import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/commerce/cart-drawer';
 import { Container } from '@/components/common/container';
 import { ProductCard } from '@/components/commerce/product-card';
+import { DataErrorState } from '@/components/common/error-retry';
+import type { Collection, Product } from '@/lib/data/types';
 
 export async function generateStaticParams() {
   const collections = await commerceRepository.getCollections();
@@ -18,15 +20,23 @@ interface CollectionPageProps {
 
 export default async function CollectionPage({ params }: CollectionPageProps) {
   const { handle } = await params;
-  const collection = await commerceRepository.getCollectionByHandle(handle);
+  let collection: Collection | null = null;
+  let products: Product[] = [];
+  let error: string | null = null;
 
-  if (!collection && handle !== 'all') {
-    notFound();
+  try {
+    collection = await commerceRepository.getCollectionByHandle(handle);
+
+    if (!collection && handle !== 'all') {
+      notFound();
+    }
+
+    products = await commerceRepository.getProducts({
+      collectionHandle: handle === 'all' ? undefined : handle,
+    });
+  } catch (err: unknown) {
+    error = err instanceof Error ? err.message : 'Unable to reach studio catalog.';
   }
-
-  const products = await commerceRepository.getProducts({
-    collectionHandle: handle === 'all' ? undefined : handle,
-  });
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
@@ -42,13 +52,19 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
               {collection ? collection.title : 'All Embroidery Kits'}
             </h1>
             <p className="font-body text-base text-wine/70 font-light">
-              {collection ? collection.description : 'Explore our complete library of beginner embroidery experiences.'}
+              {collection
+                ? collection.description
+                : 'Explore our complete library of beginner embroidery experiences.'}
             </p>
           </div>
 
-          {products.length === 0 ? (
+          {error ? (
+            <DataErrorState message={error} />
+          ) : products.length === 0 ? (
             <div className="text-center py-16 bg-white/50 rounded-[2rem] ring-1 ring-wine/5">
-              <p className="font-display text-xl text-wine/60">No items found in this collection.</p>
+              <p className="font-display text-xl text-wine/60">
+                No items found in this collection.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">

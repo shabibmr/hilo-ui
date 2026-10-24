@@ -1,4 +1,4 @@
-import { Product, Collection, Cart, HomepageContent, FounderStoryContent } from './types';
+import { Product, Collection, Cart, HomepageContent, FounderStoryContent, SiteSettings } from './types';
 
 export interface CommerceRepository {
   getProducts(filter?: { collectionHandle?: string; difficulty?: string; maxPrice?: number }): Promise<Product[]>;
@@ -24,4 +24,11 @@ export interface CommerceRepository {
 export interface ContentRepository {
   getHomepageContent(): Promise<HomepageContent>;
   getFounderStory(): Promise<FounderStoryContent>;
+  getSiteSettings(): Promise<SiteSettings>;
+  submitEnquiry(input: {
+    name: string;
+    email: string;
+    message: string;
+    kind?: 'contact' | 'workshop';
+  }): Promise<void>;
 }
