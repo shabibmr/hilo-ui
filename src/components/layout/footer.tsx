@@ -1,37 +1,20 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { HoopLogo } from '../common/hoop-logo';
 import { Container } from '../common/container';
 import { Mail, MessageCircle, Camera } from 'lucide-react';
-import { contentRepository } from '@/lib/data/providers';
-import type { SiteSettings } from '@/lib/data/types';
+import { useSiteSettings } from '@/lib/data/use-live';
+import { DataErrorState } from '@/components/common/error-retry';
 
 export const Footer: React.FC = () => {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const { settings, error, reload } = useSiteSettings();
 
-  useEffect(() => {
-    let active = true;
-    contentRepository
-      .getSiteSettings()
-      .then((data) => {
-        if (active) setSettings(data);
-      })
-      .catch((err) => {
-        console.warn('Could not load footer site settings:', err);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const instagramUrl = settings?.social?.instagram || 'https://instagram.com/hiloarte';
-  const emailAddress = settings?.store?.email || 'hello@hiloarte.com';
-  const whatsappNumber = settings?.social?.whatsapp || '+91 98200 11024';
-  const whatsappClean = whatsappNumber.replace(/[^0-9]/g, '');
-  const gstin = settings?.store?.gstin || '27AAPFH1842Q1Z5';
+  const instagramUrl = settings?.social?.instagram || '';
+  const emailAddress = settings?.store?.email || '';
+  const whatsappClean = (settings?.social?.whatsapp || '').replace(/[^0-9]/g, '');
+  const gstin = settings?.store?.gstin || '';
 
   return (
     <footer className="bg-wine-ink text-cream pt-20 pb-10 relative overflow-hidden">
@@ -43,12 +26,20 @@ export const Footer: React.FC = () => {
               A premium, slow-living luxury creative brand selling beginner embroidery experiences
               and gift moments across India.
             </p>
-            {settings?.store?.address && (
+            {error ? (
+              <DataErrorState
+                title="Unable to load store details"
+                message={error}
+                onRetry={reload}
+                className="my-2 p-4 bg-wine/40 text-cream max-w-xs"
+              />
+            ) : settings?.store?.address ? (
               <p className="font-body text-[11px] text-cream/50 leading-relaxed font-light">
                 {settings.store.address}
               </p>
-            )}
+            ) : null}
             <div className="flex items-center gap-2.5 text-antique-gold pt-2">
+              {instagramUrl && (
               <a
                 href={instagramUrl}
                 target="_blank"
@@ -58,6 +49,8 @@ export const Footer: React.FC = () => {
               >
                 <Camera className="w-4 h-4" strokeWidth={1.25} />
               </a>
+              )}
+              {emailAddress && (
               <a
                 href={`mailto:${emailAddress}`}
                 className="w-9 h-9 rounded-full ring-1 ring-gold/30 flex items-center justify-center hover:bg-gold/10 hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
@@ -65,6 +58,8 @@ export const Footer: React.FC = () => {
               >
                 <Mail className="w-4 h-4" strokeWidth={1.25} />
               </a>
+              )}
+              {whatsappClean && (
               <a
                 href={`https://wa.me/${whatsappClean}`}
                 target="_blank"
@@ -74,6 +69,7 @@ export const Footer: React.FC = () => {
               >
                 <MessageCircle className="w-4 h-4" strokeWidth={1.25} />
               </a>
+              )}
             </div>
           </div>
 
@@ -100,7 +96,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
-                  href="/collections/accessories"
+                  href="/coming-soon"
                   className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 >
                   Embroidery Accessories

@@ -20,8 +20,6 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 export const WhyHiloSection: React.FC<WhyHiloSectionProps> = ({ cards }) => {
-  const [feature, ...rest] = cards;
-
   return (
     <Section variant="sage">
       <Container>
@@ -32,33 +30,31 @@ export const WhyHiloSection: React.FC<WhyHiloSectionProps> = ({ cards }) => {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5 md:auto-rows-fr">
-          {/* Large philosophy feature cell */}
-          {feature && (
-            <div className="md:col-span-8 md:row-span-2">
-              <DoubleBezel className="h-full min-h-[280px]" coreClassName="h-full">
-                <div className="p-8 sm:p-10 h-full flex flex-col justify-between gap-6 bg-[radial-gradient(ellipse_at_90%_10%,rgba(176,141,87,0.12),transparent_50%)]">
-                  <div className="w-11 h-11 rounded-full bg-wine/[0.04] ring-1 ring-gold/30 flex items-center justify-center text-gold">
-                    {iconMap[feature.icon] || <Sparkles className="w-5 h-5" strokeWidth={1.15} />}
-                  </div>
-                  <div>
-                    <h3 className="font-display text-2xl sm:text-3xl font-normal text-wine leading-snug max-w-[16ch]">
-                      A quieter ritual for modern evenings.
-                    </h3>
-                    <p className="font-body text-sm sm:text-base text-wine/70 font-light leading-relaxed mt-3 max-w-md">
-                      HILO ARTE is not a craft supply shop. It is a slow-living embroidery
-                      experience — premium materials, guided lessons, and the permission to create
-                      without hurry. {feature.description}
-                    </p>
-                  </div>
-                  <span className="text-[11px] uppercase tracking-[0.14em] font-medium text-gold">
-                    Begin the journey →
-                  </span>
+          {/* Fixed ritual cell — not one of the six cards */}
+          <div className="md:col-span-8 md:row-span-2">
+            <DoubleBezel className="h-full min-h-[280px]" coreClassName="h-full">
+              <div className="p-8 sm:p-10 h-full flex flex-col justify-between gap-6 bg-[radial-gradient(ellipse_at_90%_10%,rgba(176,141,87,0.12),transparent_50%)]">
+                <div className="w-11 h-11 rounded-full bg-wine/[0.04] ring-1 ring-gold/30 flex items-center justify-center text-gold">
+                  <Moon className="w-5 h-5" strokeWidth={1.15} />
                 </div>
-              </DoubleBezel>
-            </div>
-          )}
+                <div>
+                  <h3 className="font-display text-2xl sm:text-3xl font-normal text-wine leading-snug max-w-[16ch]">
+                    A quieter ritual for modern evenings.
+                  </h3>
+                  <p className="font-body text-sm sm:text-base text-wine/70 font-light leading-relaxed mt-3 max-w-md">
+                    HILO ARTE is not a craft supply shop. It is a slow-living embroidery
+                    experience — premium materials, guided lessons, and the permission to create
+                    without hurry.
+                  </p>
+                </div>
+                <span className="text-[11px] uppercase tracking-[0.14em] font-medium text-gold">
+                  Begin the journey →
+                </span>
+              </div>
+            </DoubleBezel>
+          </div>
 
-          {rest.map((card, idx) => (
+          {cards.map((card, idx) => (
             <div key={idx} className="md:col-span-4">
               <DoubleBezel className="h-full" coreClassName="h-full bg-white">
                 <div className="p-6 sm:p-7 h-full flex flex-col gap-3">

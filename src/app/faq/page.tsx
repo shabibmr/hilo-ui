@@ -24,7 +24,7 @@ const FAQ_CATEGORIES = [
     category: 'Shipping & Delivery',
     items: [
       { q: 'How long does shipping take across India?', a: 'Orders are dispatched within 24 hours from our Jaipur studio. Express delivery typically arrives in 2 to 4 business days.' },
-      { q: 'Is free shipping available?', a: 'Yes! All orders over ₹1499 qualify for complimentary express shipping across India.' },
+      { q: 'How is shipping handled?', a: 'Orders are dispatched within 24 hours from our studio. Express delivery across India typically arrives in 2 to 4 business days. The amount charged at payment includes shipping as calculated by our order system.' },
     ],
   },
 ];

@@ -1,3 +1,5 @@
+'use client';
+
 import { contentRepository, commerceRepository } from '@/lib/data/providers';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -11,20 +13,16 @@ import { KitContentsSection } from '@/components/sections/kit-contents-section';
 import { CreativeJourneySection } from '@/components/sections/creative-journey-section';
 import { NewsletterSection } from '@/components/sections/newsletter-section';
 import { DataErrorState } from '@/components/common/error-retry';
-import type { HomepageContent, Product } from '@/lib/data/types';
-import { MOCK_HOMEPAGE_CONTENT } from '@/lib/data/mock/homepage-content';
+import { useLive } from '@/lib/data/use-live';
 
-export default async function HomePage() {
-  let content: HomepageContent = MOCK_HOMEPAGE_CONTENT;
-  let bestSellers: Product[] = [];
-  let error: string | null = null;
-
-  try {
-    content = await contentRepository.getHomepageContent();
-    bestSellers = await commerceRepository.getBestSellers();
-  } catch (err: unknown) {
-    error = err instanceof Error ? err.message : 'Unable to connect to live studio catalog.';
-  }
+export default function HomePage() {
+  const { data, error, loading, reload } = useLive(async () => {
+    const [content, bestSellers] = await Promise.all([
+      contentRepository.getHomepageContent(),
+      commerceRepository.getBestSellers(),
+    ]);
+    return { content, bestSellers };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
@@ -33,17 +31,19 @@ export default async function HomePage() {
       <main className="flex-1">
         {error ? (
           <div className="py-24">
-            <DataErrorState message={error} />
+            <DataErrorState message={error} onRetry={reload} />
           </div>
+        ) : loading || !data ? (
+          <div className="min-h-[70vh]" aria-busy="true" />
         ) : (
           <>
-            <HeroSection content={content.hero} />
-            <CollectionsNavSection items={content.collectionsNav} />
-            <WhyHiloSection cards={content.whyHiloCards} />
-            <BestSellersSection products={bestSellers} />
-            <FounderTeaserSection content={content.founderTeaser} />
-            <KitContentsSection items={content.kitContentsItems} />
-            <CreativeJourneySection steps={content.creativeJourneySteps} />
+            <HeroSection content={data.content.hero} />
+            <CollectionsNavSection items={data.content.collectionsNav} />
+            <WhyHiloSection cards={data.content.whyHiloCards} />
+            <BestSellersSection products={data.bestSellers} />
+            <FounderTeaserSection content={data.content.founderTeaser} />
+            <KitContentsSection items={data.content.kitContentsItems} />
+            <CreativeJourneySection steps={data.content.creativeJourneySteps} />
             <NewsletterSection />
           </>
         )}

@@ -14,11 +14,11 @@ interface CollectionsNavSectionProps {
 }
 
 const collectionImages: Record<string, string> = {
-  'diy-kits': '/hilo/images/collections/diy-kits.jpg',
-  'gift-experiences': '/hilo/images/collections/gift-experiences.jpg',
-  accessories: '/hilo/images/collections/accessories.jpg',
-  workshops: '/hilo/images/founder/workspace-2.jpg',
-  customisation: '/hilo/images/founder/workspace-4.jpg',
+  'diy-kits': '/images/collections/diy-kits.jpg',
+  'gift-experiences': '/images/collections/gift-experiences.jpg',
+  accessories: '/images/collections/accessories.jpg',
+  workshops: '/images/founder/workspace-2.jpg',
+  customisation: '/images/founder/workspace-4.jpg',
 };
 
 const collectionBlurbs: Record<string, string> = {
@@ -41,14 +41,15 @@ export const CollectionsNavSection: React.FC<CollectionsNavSectionProps> = ({ it
 
         <div className="flex md:grid md:grid-cols-5 gap-4 overflow-x-auto snap-x snap-mandatory md:overflow-visible pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
           {items.map((item, idx) => {
-            const targetHref =
-              item.handle === 'workshops'
+            const targetHref = item.isComingSoon
+              ? '/coming-soon'
+              : item.handle === 'workshops'
                 ? '/workshops'
                 : item.handle === 'customisation'
                   ? '/customisation'
                   : `/collections/${item.handle}`;
 
-            const imageSrc = collectionImages[item.handle] || '/hilo/images/collections/diy-kits.jpg';
+            const imageSrc = collectionImages[item.handle] || '/images/collections/diy-kits.jpg';
             const blurb = collectionBlurbs[item.handle] || '';
             const isWide = idx === 0;
 

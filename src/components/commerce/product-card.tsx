@@ -14,12 +14,13 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addItem, isLoading } = useCartStore();
+  const soldOut = !product.variants[0]?.availableForSale;
 
   return (
     <div className="group relative flex flex-col h-full transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1.5">
       <DoubleBezel className="h-full shadow-wine-sm" coreClassName="flex flex-col h-full bg-white">
         <Link
-          href={`/products/${product.handle}`}
+          href={`/products/view/?handle=${encodeURIComponent(product.handle)}`}
           className="block relative aspect-[4/5] overflow-hidden bg-wine/[0.04]"
         >
           {product.images[0]?.url ? (
@@ -49,7 +50,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <div className="p-5 flex flex-col flex-1 justify-between space-y-4">
           <div>
             <Link
-              href={`/products/${product.handle}`}
+              href={`/products/view/?handle=${encodeURIComponent(product.handle)}`}
               className="block group-hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               <h3 className="font-display text-xl font-medium text-wine leading-tight">
@@ -71,10 +72,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
             <button
               onClick={() => addItem(product)}
-              disabled={isLoading}
+              disabled={isLoading || soldOut}
               className="group/btn inline-flex items-center gap-2 bg-gold text-wine hover:bg-antique-gold pl-4 pr-1.5 py-1.5 rounded-full font-body text-[10px] uppercase tracking-[0.12em] font-semibold transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] cursor-pointer disabled:opacity-50"
             >
-              Add
+              {soldOut ? 'Sold out' : 'Add'}
               <span className="w-8 h-8 rounded-full bg-wine/10 flex items-center justify-center transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-px group-hover/btn:scale-105">
                 <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.25} />
               </span>

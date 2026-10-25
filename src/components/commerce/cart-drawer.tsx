@@ -15,9 +15,6 @@ export const CartDrawer: React.FC = () => {
   if (!isOpen) return null;
 
   const subtotal = cart?.subtotal || 0;
-  const freeShippingThreshold = 1499;
-  const progressPercent = Math.min(100, (subtotal / freeShippingThreshold) * 100);
-  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -52,25 +49,6 @@ export const CartDrawer: React.FC = () => {
               <span className="absolute w-3.5 h-px bg-current rotate-45" />
               <span className="absolute w-3.5 h-px bg-current -rotate-45" />
             </button>
-          </div>
-
-          <div className="bg-wine/[0.04] p-4 ring-1 ring-inset ring-wine/5 text-xs font-body">
-            {remainingForFreeShipping > 0 ? (
-              <p className="text-wine/80 mb-2">
-                Add <span className="font-semibold text-wine">₹{remainingForFreeShipping}</span> more
-                to unlock <span className="text-gold font-semibold">Free Shipping</span>.
-              </p>
-            ) : (
-              <p className="text-gold font-medium mb-2">
-                Congratulations — free shipping unlocked.
-              </p>
-            )}
-            <div className="w-full bg-wine/10 h-1.5 rounded-full overflow-hidden">
-              <div
-                className="bg-gold h-full origin-left transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] rounded-full"
-                style={{ transform: `scaleX(${progressPercent / 100})` }}
-              />
-            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-4">

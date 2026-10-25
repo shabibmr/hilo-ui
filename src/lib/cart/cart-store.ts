@@ -9,6 +9,7 @@ interface CartState {
   cart: Cart | null;
   isOpen: boolean;
   isLoading: boolean;
+  error: string | null;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
@@ -16,6 +17,7 @@ interface CartState {
   updateQuantity: (lineId: string, quantity: number) => Promise<void>;
   removeItem: (lineId: string) => Promise<void>;
   initializeCart: () => Promise<void>;
+  clearCart: () => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -24,15 +26,25 @@ export const useCartStore = create<CartState>()(
       cart: null,
       isOpen: false,
       isLoading: false,
+      error: null,
 
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
 
+      clearCart: () => set({ cart: null, error: null }),
+
       initializeCart: async () => {
         const { cart } = get();
         if (cart?.id) {
-          await commerceRepository.hydrateCart(cart);
+          try {
+            await commerceRepository.hydrateCart(cart);
+            // Adopt the re-priced basket so stale prices/stock never show.
+            const fresh = await commerceRepository.getCart(cart.id);
+            if (fresh) set({ cart: fresh });
+          } catch (error) {
+            console.error('Could not refresh basket:', error);
+          }
           return;
         }
         const newCart = await commerceRepository.createCart();
@@ -40,7 +52,7 @@ export const useCartStore = create<CartState>()(
       },
 
       addItem: async (product: Product, variant?: ProductVariant, quantity = 1) => {
-        set({ isLoading: true });
+        set({ isLoading: true, error: null });
         try {
           let { cart } = get();
           if (!cart?.id) {
@@ -60,7 +72,10 @@ export const useCartStore = create<CartState>()(
           set({ cart: updatedCart, isOpen: true, isLoading: false });
         } catch (error) {
           console.error('Error adding item to cart:', error);
-          set({ isLoading: false });
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Could not add this item.',
+          });
         }
       },
 
@@ -68,14 +83,17 @@ export const useCartStore = create<CartState>()(
         const { cart } = get();
         if (!cart?.id) return;
 
-        set({ isLoading: true });
+        set({ isLoading: true, error: null });
         try {
           await commerceRepository.hydrateCart(cart);
           const updatedCart = await commerceRepository.updateCartLine(cart.id, lineId, quantity);
           set({ cart: updatedCart, isLoading: false });
         } catch (error) {
           console.error('Error updating cart quantity:', error);
-          set({ isLoading: false });
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Could not update the basket.',
+          });
         }
       },
 

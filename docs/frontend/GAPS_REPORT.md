@@ -1,120 +1,111 @@
 # Hilo Arte storefront: gaps report
 
-Date: 2026-10-25. Scope: the public storefront in `src/`. The admin app in `admin/` is out of scope except where its saved `site_settings` shape is the contract the storefront already reads.
+Revised 2026-10-25. Scope: the public storefront in `src/` and the architecture connecting it to the database. The admin app in `admin/` is out of scope except where shared backend contracts and `site_settings` apply.
+
+The remaining work is specified in `docs/frontend/IMPLEMENTATION_PLAN.md` and tracked in `docs/frontend/TASKS.md`. This document details the gap analysis between the current codebase, the target API backend architecture, and the design specification.
 
 Sources compared:
+- `docs/backend/IMPLEMENTATION_PLAN.md` (Phases 5 and 5b, storefront rules in Decisions)
+- `docs/backend/schema.sql` (catalog, enquiries, orders, `site_settings`)
+- `docs/backend/TASKS.md`
+- `docs/mockups/hilo-editorial-luxury.html` (current homepage visual target)
+- `docs/hilo-mock1.png` (older homepage design; deprecated)
+- Current storefront code in `src/`, `admin/`, and `supabase/functions/`
 
-- `docs/backend/IMPLEMENTATION_PLAN.md` (Phases 5 and 5b, and the storefront rules in Decisions)
-- `docs/backend/schema.sql` (catalog, enquiries, `site_settings`)
-- `docs/backend/TASKS.md` (Phase 5 and 5b checkboxes)
-- `docs/mockups/hilo-editorial-luxury.html` (the current homepage visual target)
-- `docs/hilo-mock1.png` (the older homepage picture the first build followed; the app has moved on from it)
-- The storefront code: repository, providers, shop routes, cart, checkout, header, footer, promo bar, contact, homepage sections
+---
 
-## Status
+## Architectural Shift: Introducing the API Backend Layer
 
-The shop UI is built and the homepage already follows the editorial mockup. A Supabase provider exists and matches the schema for published products, collections, one default variant, enquiries, and site settings. The provider is not what production serves today: `NEXT_PUBLIC_DATA_PROVIDER` defaults to `mock`.
+The previous draft assumed direct browser-to-database communication (storefront querying Supabase PostgREST with an anon key, and calling Deno Edge Functions for checkout). 
 
-`docs/backend/TASKS.md` still marks every Phase 5 row as open. That register is behind the code. The remaining work is wiring, not a new shop.
+**The target architecture replaces direct browser-to-database access with a dedicated API Backend Layer:**
 
-## What already matches the backend plan
+```
+Storefront (Browser / Static Shell) ──► HTTP /api/v1/* ──┐
+                                                         ├──► [API Backend Layer] ──► Database (Postgres)
+Admin App (Browser / Static Shell)  ──► HTTP /api/v1/* ──┘          │
+                                                               (Razorpay API,
+                                                                Stock Lock,
+                                                                Private Secrets)
+```
 
-- Pages and components call `commerceRepository` and `contentRepository`. The Supabase client is used only in `src/lib/supabase.ts` and `src/lib/data/providers/supabase-provider.ts`.
-- `src/lib/data/providers/index.ts` switches on `NEXT_PUBLIC_DATA_PROVIDER`, then `DATA_PROVIDER`, default `mock`. `.env.local.example` documents both flags, the anon URL, the anon key, and an unused `NEXT_PUBLIC_RAZORPAY_KEY_ID`.
-- Published products and collections are filtered with `published = true`. Best sellers use `is_best_seller`. One variant is built per product. `availableForSale` is `stock > 0`.
-- The cart stays in the browser. Zustand persists it under `hilo-arte-cart-storage`. The Supabase provider keeps a module `Map` and reseeds it with `hydrateCart`.
-- Promo bar, footer, and the contact page call `getSiteSettings()` in the browser. Contact inserts into `enquiries` through `submitEnquiry`.
-- `getHomepageContent()` overlays `site_settings.hero` onto the mock homepage. Field names are the camelCase names the admin settings form writes (`primaryCtaText`, `backgroundImage`, and the rest). Founder copy stays on `MOCK_FOUNDER_STORY`, which the plan leaves in mock for v1.
-- Guest checkout only. The checkout form collects name, email, phone, and address. There is no customer account.
+### Why this change is necessary:
+1. **Security & Credential Isolation:** No database connection details, Supabase anon keys, or payment gateway secrets are exposed to the client bundle.
+2. **Business Logic & Pricing Authority:** Order creation, pricing calculation, atomic stock reservation, and payment verification are unified in a single backend service rather than fragmented across Deno edge scripts and SQL functions.
+3. **Repository Pattern Compatibility:** The storefront already abstracts data behind `CommerceRepository` and `ContentRepository` (`src/lib/data/repository.ts`). Swapping direct Supabase calls for an `ApiCommerceRepository` / `ApiContentRepository` requires **zero UI component rewrites**.
 
-## What already matches the editorial mockup
+---
 
-`docs/mockups/` contains only `hilo-editorial-luxury.html`. It is a homepage reference, not a product, collection, cart, or checkout mock.
+## What Already Matches
 
-The live homepage shares that file's tokens, fonts, paper grain, island nav, section order, copy, and photos: hero in a dark double-bezel, collection photo cards, philosophy bento, best sellers, founder split, kit rail, seven-step journey, newsletter, footer. `docs/hilo-mock1.png` (top bar, centered wordmark, icon wreath, six flat philosophy icons) is the older target. Do not rebuild toward it.
+- **Repository Abstraction:** Pages and components consume `commerceRepository` and `contentRepository`. Direct data access is isolated to provider implementations.
+- **Provider Switching:** `src/lib/data/providers/index.ts` selects the active provider via environment variables (`NEXT_PUBLIC_DATA_PROVIDER`), supporting `mock` for local development.
+- **Client Catalog Loading:** Catalog pages use `useLive` (`src/lib/data/use-live.ts`) to fetch runtime data dynamically, preventing static build snapshots from freezing live catalog state.
+- **Cart Storage:** Cart persistence remains strictly in browser storage (`localStorage` via Zustand under `hilo-arte-cart-storage`). No server session is required for guest browsing.
+- **Form Controls:** `AddToCartButton` and `ProductCard` respect `availableForSale` and cap quantity adjustments at live stock.
+- **Guest Checkout:** Checkout collects shipping details without forcing customer account creation. Order submission sends only product IDs and quantities; prices are never trusted from the browser.
+- **Editorial Alignment:** The live homepage typography, layout, paper grain texture, and photo cards match `docs/mockups/hilo-editorial-luxury.html`.
 
-## Gaps
+---
 
-### 1. Catalog is frozen at build time
+## Remaining Gaps
 
-`next.config.ts` sets `output: 'export'`. These routes are server components, so their Supabase calls run during `next build` and the HTML keeps that snapshot:
+### 1. Direct Browser-to-Database Coupling (Primary Gap)
+- **Current State:** The storefront talks directly to Supabase (`supabase-provider.ts`) and POSTs directly to a Supabase Edge Function (`create-order`) using `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- **Target:** A dedicated API Backend Layer (`/server` or `/api`) must expose standard REST endpoints (`/api/v1/products`, `/api/v1/collections`, `/api/v1/settings`, `/api/v1/enquiries`, `/api/v1/orders`). The storefront must use an `ApiProvider` that communicates with this backend over HTTP.
 
-- `src/app/page.tsx` (homepage content and best sellers)
-- `src/app/(shop)/collections/[handle]/page.tsx`
-- `src/app/(shop)/products/[handle]/page.tsx`
+### 2. A Missing Settings Row Still Looks Like a Success
+- `getSiteSettings()` currently returns a synthesized fallback object when `maybeSingle()` returns no row, populating hero fields from `MOCK_HOMEPAGE_CONTENT.hero`.
+- `useSiteSettings` lacks a `reload` mechanism. A failed read silently hides fields or displays empty blocks instead of presenting a retryable `DataErrorState`.
+- `src/lib/supabase.ts` still instantiates a fallback client pointed at `https://placeholder.supabase.co`. Any client initialization failure should throw explicitly.
 
-`generateStaticParams` on the collection and product routes also runs at build time. A product or collection created in admin has no HTML file and 404s until the next export.
+### 3. Mock Variants Have No Numeric Stock
+- The live Supabase mapper sets `variant.stock` and derives `availableForSale`. However, mock fixtures omit numeric stock, causing the plus control in `AddToCartButton` to treat mock stock as infinite (`Infinity`). The mock provider must mirror production behavior by providing explicit numeric stock counts.
 
-The plan requires the opposite: the static export fetches at runtime, and an admin edit needs no rebuild.
+### 4. Local Image Paths Include `basePath`
+- `next.config.ts` configures `basePath: '/hilo'` and `images.unoptimized: true`. Mock images and section fallbacks are stored with a `/hilo/images/...` prefix. Next's `<Image>` component prepends `basePath` again, producing invalid URLs like `/hilo/hilo/images/...`.
+- All stored asset paths must omit the `/hilo` prefix and use `/images/...`.
 
-Promo bar, footer, and contact already fetch in the browser. Catalog routes do not.
+### 5. A New Collection Handle Has No Client Shell
+- While product handles missing at build time can be viewed via the client query shell `/products/view/?handle=<handle>`, collections lack an equivalent shell. Any collection handle created post-build returns a 404.
+- An equivalent `/collections/view/?handle=<handle>` route must be added and documented in `docs/frontend/STATIC_ROUTES.md`.
 
-### 2. Unreachable Supabase still shows stand-in content
+### 6. Checkout Copy Overclaims Payment and Shipping
+- The backend order creator charges the database subtotal in paise without adding a separate shipping surcharge. The storefront checkout page still calculates and displays a hardcoded ₹99 fee (waived at ₹1499), creating a mismatch with the actual payment gateway amount.
+- The cart drawer, product page, shipping policy, FAQ, and mock announcement still mention the ₹1499 / ₹99 rule. These must be sanitized.
+- Dismissing the payment modal currently displays "Payment was cancelled. Your basket is still here." It should explicitly communicate that items remain reserved for 15 minutes.
+- Order confirmation blindly displays an order received message even when the `order` query parameter is missing.
 
-The plan requires an error with a retry, and no stale catalog in production.
+### 7. Homepage Editorial Mockup Deltas
+- **Tagline:** `HoopLogo` renders "slow embroidery" instead of the mockup tagline: "Stitch beauty into your life".
+- **Accessories Navigation:** Accessories is rendered as an active collection linking to `/collections/accessories`. It must display a "Coming Soon" badge and link to `/coming-soon`.
+- **Philosophy Bento Block:** `WhyHiloSection` collapses the first card ("Beginner Friendly") into the main headline cell. The layout should present the fixed ritual headline alongside all six distinct cards.
 
-- `DataErrorState` (`src/components/common/error-retry.tsx`) renders a retry button only when `onRetry` is passed. Homepage, collection, and product pages pass a message and no `onRetry`. On a static export that error is also baked into the file.
-- `SupabaseContentRepository.getHomepageContent()` catches a settings failure and returns `MOCK_HOMEPAGE_CONTENT`.
-- `getSiteSettings()` fills a missing row with the Bandra studio address, phone, `hello@hiloarte.com`, GSTIN `27AAPFH1842Q1Z5`, and the shipping announcement.
-- Promo bar, footer, and contact keep those same strings when the request fails. The failure is a `console.warn`.
+### 8. Social Media Previews & WhatsApp Link Sharing Missing
+- **Current State:** `src/app/layout.tsx` defines only basic title, description, and keywords. There is no `metadataBase`, no Open Graph metadata (`og:title`, `og:image`, `og:description`), no Twitter Card metadata, and no `generateMetadata` function on dynamic routes (`products/[handle]/page.tsx`).
+- **Impact on WhatsApp & Social Sharing:** WhatsApp, Facebook, Twitter, and iMessage link scrapers do NOT execute client-side JavaScript. When a user copies and shares a product link on WhatsApp, no product image appears, and only fallback site-level text is shown. Furthermore, WhatsApp crawlers specifically fail if the preview image is over 300KB, non-HTTPS, or in certain WebP variants.
+- **Target:** 
+  - Add root Open Graph and Twitter Card tags in `src/app/layout.tsx`.
+  - Implement `generateMetadata` on `src/app/(shop)/products/[handle]/page.tsx` pulling the product title, description, and an optimized primary image URL (< 300KB JPG/PNG).
 
-The GSTIN fallback is a launch risk. A failed settings read would print a placeholder tax id.
+### 9. Search Engine Optimization (SEO) & Structured Data Missing
+- **Current State:** The codebase lacks a `robots.txt` configuration, an XML sitemap generator (`sitemap.ts`), and Schema.org structured data.
+- **Impact on Organic Search & Indexing:**
+  - Search crawlers cannot identify which routes are canonical or prioritize product indexing.
+  - Private transactional pages (`/checkout`, `/checkout/confirmation`) are unprotected from indexation without a robots rule.
+  - Google Search cannot display rich product snippets (live price in INR, in-stock badge, product rating) due to missing JSON-LD `Product` and `Offer` schema.
+- **Target:**
+  - Add `src/app/robots.ts` allowing public catalog routes while disallowing private checkout and administrative paths.
+  - Add `src/app/sitemap.ts` dynamically listing published products and collections with change frequencies.
+  - Inject Schema.org `Product` JSON-LD structured data into the product view.
 
-### 3. Sold out is computed and ignored
+---
 
-`mapDbProduct` sets `variants[0].availableForSale` from stock. `AddToCartButton` and `ProductCard` never read it. The quantity control has no upper bound. The cart will accept a line for a product with stock 0.
+## Decisions That Stay
 
-The Edge Function is what must reject an oversell. The storefront still has to show sold out from live data, which the plan requires.
-
-The mapped product does not expose a numeric stock count, so the UI cannot cap quantity at the live number without a small addition to the mapper.
-
-### 4. Checkout does not place an order
-
-`src/app/(shop)/checkout/page.tsx` submits the form and routes to `/checkout/confirmation`. Nothing is sent to Supabase or Razorpay. The confirmation page always says the order was received. It has no order number.
-
-Prices live in the cart line. Checkout totals `cart.subtotal` and adds shipping with a hardcoded rule: ₹0 at ₹1499 or above, otherwise ₹99. The product page repeats "Free Shipping over ₹1499". The plan says the browser sends product ids and quantities only. `create-order` reads prices from the database, decrements stock, creates the Razorpay order, and inserts the order as `pending`.
-
-`NEXT_PUBLIC_RAZORPAY_KEY_ID` is unused. There is no Razorpay checkout script, no 15-minute hold message, and no path for "last item already taken".
-
-Phase 5b Edge Functions (`create-order`, `razorpay-webhook`, `refund-order`, `verify-payment`) are backend work. The storefront gap is the call site and the confirmation page.
-
-### 5. Storage image URLs are not allowed
-
-`next.config.ts` sets `images.unoptimized: true` and does not set `images.remotePatterns`. Admin uploads land on `https://<project>.supabase.co/storage/...`. `next/image` on the product card, gallery, and hero rejects remote hosts that are not listed.
-
-Mock images are local paths under `/images/...`, so this only appears once the provider is `supabase`.
-
-The homepage hero fallback and several mock image paths are stored as `/hilo/images/...`, which already includes `basePath`. `next/image` prefixes `basePath` again. Confirm the hero and collection images resolve to `/hilo/images/...` once, not `/hilo/hilo/images/...`.
-
-### 6. Homepage versus the editorial mockup
-
-Three visible differences:
-
-- The mockup wordmark tagline is "Stitch beauty into your life". `HoopLogo` renders "slow embroidery".
-- The mockup marks Accessories as coming soon. `MOCK_HOMEPAGE_CONTENT.collectionsNav` leaves Accessories live, and the section links it to `/collections/accessories`.
-- The mockup philosophy block is one large cell ("A quieter ritual for modern evenings.") plus all six small cards. `WhyHiloSection` uses the first data card as that large cell, so Beginner Friendly disappears as its own card and its description is appended to the ritual paragraph.
-
-Newsletter submit only sets local React state. The plan does not require a newsletter table in v1. Leave it as a local acknowledgement unless a later decision says otherwise.
-
-### 7. Production provider footgun
-
-In `src/lib/data/providers/index.ts`, provider `supabase` plus `NODE_ENV === 'production'` selects `SupabaseCommerceRepository` even when the URL is missing. `isSupabaseConfigured()` is false in that case, and `src/lib/supabase.ts` builds a client pointed at `https://placeholder.supabase.co`. The build then fails or the exported shell calls a host that does not exist.
-
-Local development with `supabase` and no URL correctly falls back to mock. That fallback must stay off in production.
-
-## Decisions that stay
-
-- Keep the current shop. The UI, repository boundary, and Supabase mapper are the right base.
-- Homepage sections other than the hero, and the founder story, stay on mock content for v1.
-- Workshops, gallery, policies, and customisation pages stay as they are. Seminars are out of v1.
-- Cart storage stays in the browser. Do not create a carts table.
-- One price and one variant per product.
-- Guest checkout only.
-- Do not retarget the homepage to `docs/hilo-mock1.png`.
-
-## Out of this frontend plan
-
-- Supabase project setup, `schema.sql`, seed script, RLS tests, pg_cron stock release, and the Edge Functions themselves.
-- Admin refund and verify-payment screens.
-- Admin deploy path.
-- Order emails, founder-story editing, raw-material inventory, multiple admins.
+1. **Repository Boundary:** Storefront UI code must never import database drivers or backend SDKs directly; all operations flow through `CommerceRepository` and `ContentRepository`.
+2. **Client-Side Cart:** Cart state lives in the browser (`hilo-arte-cart-storage`). No server-side session or carts table.
+3. **Price Authority:** The API backend is the sole authority for pricing and stock verification. The frontend submits only product IDs and requested quantities.
+4. **Single Price & Variant:** Each catalog item exposes one default variant and a single price in v1.
+5. **Static Export Delivery:** Storefront build output remains statically exported (`output: 'export'`) to `/var/www/html/algo_cloud/hilo`. Dynamic capabilities are achieved through client-side API requests.
+6. **No Reversion to Older Mockups:** Retain the editorial luxury styling (`hilo-editorial-luxury.html`); do not restyle toward `hilo-mock1.png`.

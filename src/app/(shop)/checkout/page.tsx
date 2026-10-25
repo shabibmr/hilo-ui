@@ -1,28 +1,65 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/lib/cart/cart-store';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Container } from '@/components/common/container';
 import { CtaButton } from '@/components/common/cta-button';
+import { placeOrder, type CheckoutCustomer } from '@/lib/checkout/place-order';
 import { ShieldCheck, CreditCard, Smartphone, ShoppingBag } from 'lucide-react';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart } = useCartStore();
+  const { cart, initializeCart, clearCart } = useCartStore();
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Re-price the saved basket against live stock before the customer pays.
+  useEffect(() => {
+    initializeCart();
+  }, [initializeCart]);
   const [paymentMethod, setPaymentMethod] = useState('upi');
 
   const subtotal = cart?.subtotal || 0;
-  const shipping = subtotal >= 1499 ? 0 : 99;
-  const total = subtotal + shipping;
   const isEmpty = !cart?.lines || cart.lines.length === 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isEmpty) return;
-    router.push('/checkout/confirmation');
+    if (isEmpty || !cart || submitting) return;
+
+    const form = new FormData(e.currentTarget);
+    const field = (name: string) => String(form.get(name) ?? '').trim();
+    const customer: CheckoutCustomer = {
+      firstName: field('firstName'),
+      lastName: field('lastName'),
+      email: field('email'),
+      phone: field('phone'),
+      street: field('street'),
+      city: field('city'),
+      state: field('state'),
+      pincode: field('pincode'),
+    };
+
+    // Mock catalogue has no order backend: keep the demo flow for local development.
+    const provider = process.env.NEXT_PUBLIC_DATA_PROVIDER || process.env.DATA_PROVIDER;
+    if (provider !== 'supabase') {
+      router.push('/checkout/confirmation/?preview=1');
+      return;
+    }
+
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const orderId = await placeOrder(cart, customer);
+      clearCart();
+      router.push(`/checkout/confirmation/?order=${encodeURIComponent(orderId)}`);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -202,15 +239,24 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <CtaButton type="submit" fullWidth size="lg">
-                  Complete Order — ₹{total}
+                {errorMsg && (
+                  <p role="alert" className="text-sm text-red-700">
+                    {errorMsg}
+                  </p>
+                )}
+
+                <CtaButton type="submit" fullWidth size="lg" disabled={submitting}>
+                  {submitting ? 'Processing…' : 'Complete Order'}
                 </CtaButton>
               </form>
 
-              {/* Order Summary */}
+              {/* Order Summary — line prices and subtotal are a preview only */}
               <div className="lg:col-span-5 space-y-6">
                 <div className="bg-white/70 p-6 rounded-xl ring-1 ring-wine/5 space-y-4">
                   <h3 className="font-display text-xl text-wine font-medium">Order Summary</h3>
+                  <p className="text-[11px] text-wine/50 font-light">
+                    Line prices and subtotal are a preview. The amount charged is confirmed at payment.
+                  </p>
 
                   <div className="space-y-3">
                     {cart?.lines.map((line) => (
@@ -226,16 +272,8 @@ export default function CheckoutPage() {
 
                   <div className="border-t border-wine/10 pt-4 space-y-2 text-sm">
                     <div className="flex justify-between text-wine/70">
-                      <span>Subtotal</span>
+                      <span>Subtotal (preview)</span>
                       <span>₹{subtotal}</span>
-                    </div>
-                    <div className="flex justify-between text-wine/70">
-                      <span>Shipping</span>
-                      <span>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span>
-                    </div>
-                    <div className="flex justify-between font-display text-lg font-semibold text-wine pt-2 border-t border-wine/10">
-                      <span>Total</span>
-                      <span>₹{total}</span>
                     </div>
                   </div>
                 </div>

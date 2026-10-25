@@ -1,5 +1,5 @@
 import { CommerceRepository, ContentRepository } from '../repository';
-import { Product, Collection, Cart, HomepageContent, FounderStoryContent, SiteSettings } from '../types';
+import { Product, Collection, Cart, HomepageContent, FounderStoryContent, SiteSettings, ProductVariant } from '../types';
 import { MOCK_PRODUCTS } from '../mock/products';
 import { MOCK_COLLECTIONS } from '../mock/collections';
 import { MOCK_FOUNDER_STORY } from '../mock/founder';
@@ -7,6 +7,22 @@ import { MOCK_HOMEPAGE_CONTENT } from '../mock/homepage-content';
 
 // In-memory cart store for mock implementation
 const mockCarts = new Map<string, Cart>();
+
+/** Fixture `stock` wins; else positive when availableForSale, else 0. availableForSale becomes stock > 0. */
+function withStock(product: Product): Product {
+  return {
+    ...product,
+    variants: product.variants.map((variant): ProductVariant => {
+      const stock =
+        variant.stock !== undefined
+          ? variant.stock
+          : variant.availableForSale
+            ? 10
+            : 0;
+      return { ...variant, stock, availableForSale: stock > 0 };
+    }),
+  };
+}
 
 export class MockCommerceRepository implements CommerceRepository {
   async getProducts(filter?: { collectionHandle?: string; difficulty?: string; maxPrice?: number }): Promise<Product[]> {
@@ -22,16 +38,16 @@ export class MockCommerceRepository implements CommerceRepository {
       products = products.filter(p => p.price <= filter.maxPrice!);
     }
 
-    return products;
+    return products.map(withStock);
   }
 
   async getProductByHandle(handle: string): Promise<Product | null> {
     const product = MOCK_PRODUCTS.find(p => p.handle === handle);
-    return product || null;
+    return product ? withStock(product) : null;
   }
 
   async getBestSellers(): Promise<Product[]> {
-    return MOCK_PRODUCTS.filter(p => p.isBestSeller);
+    return MOCK_PRODUCTS.filter(p => p.isBestSeller).map(withStock);
   }
 
   async getCollections(): Promise<Collection[]> {
@@ -72,8 +88,9 @@ export class MockCommerceRepository implements CommerceRepository {
       cart = await this.createCart();
     }
 
-    const product = MOCK_PRODUCTS.find(p => p.id === productId);
-    if (!product) throw new Error('Product not found');
+    const raw = MOCK_PRODUCTS.find(p => p.id === productId);
+    if (!raw) throw new Error('Product not found');
+    const product = withStock(raw);
 
     const variant = product.variants.find(v => v.id === variantId) || product.variants[0];
 

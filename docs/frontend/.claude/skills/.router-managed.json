@@ -1,0 +1,13 @@
+{
+ "docs": "docs",
+ "code-review": "code-review",
+ "review-contract": "review-contract",
+ "domain-modeling": "domain-modeling",
+ "stitch-design-taste": "stitch-design-taste",
+ "grill-with-docs": "grill-with-docs",
+ "balram": "balram",
+ "google-workspace": "google-workspace",
+ "tdd": "tdd",
+ "diagnosing-bugs": "diagnosing-bugs",
+ "implement-spec": "implement-spec"
+}

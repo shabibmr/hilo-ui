@@ -28,7 +28,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ content }) => {
           transition: { duration: DURATION.slow, delay, ease: EASE_LUXURY },
         };
 
-  const heroImage = content.backgroundImage?.url || '/hilo/images/hero/hero-fairy-moon.jpg';
+  const heroImage = content.backgroundImage?.url || '/images/hero/hero-fairy-moon.jpg';
   const heroAlt =
     content.backgroundImage?.altText || 'Fairy stitching on crescent moon atmosphere';
 

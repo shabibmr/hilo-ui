@@ -6,6 +6,7 @@ import {
   Difficulty,
   FounderStoryContent,
   HomepageContent,
+  ImageAsset,
   Product,
   SiteSettings,
 } from '../types';
@@ -15,27 +16,33 @@ import { MOCK_FOUNDER_STORY } from '../mock/founder';
 // In-memory cart store for client-side checkout session
 const supabaseCarts = new Map<string, Cart>();
 
-function mapDbProduct(row: Record<string, unknown>): Product {
+type DbRow = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback);
+const list = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+
+function mapDbProduct(row: DbRow): Product {
   const stock = Number(row.stock) || 0;
   const price = Number(row.price) || 0;
+  const handle = str(row.handle);
 
   return {
-    id: row.id,
-    handle: row.handle,
-    title: row.title,
-    subtitle: row.subtitle || undefined,
-    description: row.description || '',
-    shortDescription: row.short_description || row.description || '',
+    id: str(row.id),
+    handle,
+    title: str(row.title),
+    subtitle: str(row.subtitle) || undefined,
+    description: str(row.description),
+    shortDescription: str(row.short_description) || str(row.description),
     price,
-    currencyCode: row.currency_code || 'INR',
-    difficulty: (row.difficulty || 'Beginner') as Difficulty,
+    currencyCode: str(row.currency_code, 'INR'),
+    difficulty: str(row.difficulty, 'Beginner') as Difficulty,
     estimatedHours: Number(row.estimated_hours) || 0,
-    images: Array.isArray(row.images) ? row.images : [],
-    collections: Array.isArray(row.collections) ? row.collections : [],
-    tags: Array.isArray(row.tags) ? row.tags : [],
-    whatsIncluded: Array.isArray(row.whats_included) ? row.whats_included : [],
-    shippingInfo: row.shipping_info || '',
-    faqs: Array.isArray(row.faqs) ? row.faqs : [],
+    images: list<ImageAsset>(row.images),
+    collections: list<string>(row.collections),
+    tags: list<string>(row.tags),
+    whatsIncluded: list<string>(row.whats_included),
+    shippingInfo: str(row.shipping_info),
+    faqs: list<{ question: string; answer: string }>(row.faqs),
     isBestSeller: Boolean(row.is_best_seller),
     isFeatured: Boolean(row.is_featured),
     variants: [
@@ -44,27 +51,29 @@ function mapDbProduct(row: Record<string, unknown>): Product {
         title: 'Default',
         price,
         availableForSale: stock > 0,
-        sku: row.handle,
+        stock,
+        sku: handle,
       },
     ],
   };
 }
 
-function mapDbCollection(row: Record<string, unknown>): Collection {
+function mapDbCollection(row: DbRow): Collection {
+  const image = row.image as ImageAsset | null;
   return {
-    id: row.id,
-    handle: row.handle,
-    title: row.title,
-    description: row.description || '',
-    image: row.image || {
-      url: '/images/hero/hero-fairy-moon.jpg',
-      altText: row.title,
-    },
-    featuredProductHandles: Array.isArray(row.featured_product_handles)
-      ? row.featured_product_handles
-      : [],
+    id: str(row.id),
+    handle: str(row.handle),
+    title: str(row.title),
+    description: str(row.description),
+    image: image?.url
+      ? image
+      : { url: '/images/hero/hero-fairy-moon.jpg', altText: str(row.title) },
+    featuredProductHandles: list<string>(row.featured_product_handles),
   };
 }
+
+// ilike treats % and _ as wildcards; difficulty is a fixed enum so match it literally.
+const escapeLike = (v: string) => v.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 export class SupabaseCommerceRepository implements CommerceRepository {
   async getProducts(filter?: {
@@ -75,13 +84,13 @@ export class SupabaseCommerceRepository implements CommerceRepository {
     let query = supabase.from('products').select('*').eq('published', true);
 
     if (filter?.difficulty) {
-      query = query.ilike('difficulty', filter.difficulty);
+      query = query.ilike('difficulty', escapeLike(filter.difficulty));
     }
-    if (filter?.maxPrice) {
+    if (filter?.maxPrice !== undefined && filter.maxPrice >= 0) {
       query = query.lte('price', filter.maxPrice);
     }
 
-    const { data, error } = await query;
+    const { data, error } = await query.order('created_at', { ascending: true }).order('handle');
     if (error) {
       throw new Error(`Failed to load products from Supabase: ${error.message}`);
     }
@@ -115,7 +124,9 @@ export class SupabaseCommerceRepository implements CommerceRepository {
       .from('products')
       .select('*')
       .eq('is_best_seller', true)
-      .eq('published', true);
+      .eq('published', true)
+      .order('created_at', { ascending: true })
+      .order('handle');
 
     if (error) {
       throw new Error(`Failed to load best sellers: ${error.message}`);
@@ -170,9 +181,33 @@ export class SupabaseCommerceRepository implements CommerceRepository {
   }
 
   async hydrateCart(cart: Cart): Promise<void> {
-    if (!supabaseCarts.has(cart.id)) {
+    // Re-price against the live catalogue so a stale localStorage basket never
+    // shows old prices, stock or unpublished products.
+    const ids = [...new Set(cart.lines.map((l) => l.product.id))];
+    if (ids.length === 0) {
       supabaseCarts.set(cart.id, cart);
+      return;
     }
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .in('id', ids)
+      .eq('published', true);
+    if (error) {
+      throw new Error(`Failed to refresh basket: ${error.message}`);
+    }
+    const live = new Map((data || []).map((r) => [str(r.id), mapDbProduct(r)]));
+    const lines = cart.lines.flatMap((line) => {
+      const product = live.get(line.product.id);
+      if (!product) return [];
+      const variant = product.variants[0];
+      const quantity =
+        variant.stock !== undefined ? Math.min(line.quantity, variant.stock) : line.quantity;
+      return quantity > 0 ? [{ ...line, product, variant, quantity }] : [];
+    });
+    const refreshed: Cart = { ...cart, lines };
+    this.recalculateCart(refreshed);
+    supabaseCarts.set(cart.id, refreshed);
   }
 
   async addCartLine(
@@ -186,10 +221,14 @@ export class SupabaseCommerceRepository implements CommerceRepository {
       cart = await this.createCart();
     }
 
+    const qty = Math.floor(quantity);
+    if (!(qty > 0)) throw new Error('Quantity must be at least 1.');
+
     const { data: dbProduct, error } = await supabase
       .from('products')
       .select('*')
       .eq('id', productId)
+      .eq('published', true)
       .maybeSingle();
 
     if (error || !dbProduct) {
@@ -197,22 +236,29 @@ export class SupabaseCommerceRepository implements CommerceRepository {
     }
 
     const product = mapDbProduct(dbProduct);
-    const variant = product.variants.find((v) => v.id === variantId) || product.variants[0];
+    const variant = product.variants.find((v) => v.id === variantId);
+    if (!variant) {
+      throw new Error('This option is no longer available.');
+    }
+    if (!variant.availableForSale) {
+      throw new Error(`${product.title} is sold out.`);
+    }
 
-    const existingLineIndex = cart.lines.findIndex(
-      (l) => l.product.id === productId && l.variant.id === variantId
+    const existing = cart.lines.find(
+      (l) => l.product.id === productId && l.variant.id === variant.id
     );
+    const wanted = (existing?.quantity ?? 0) + qty;
+    if (variant.stock !== undefined && wanted > variant.stock) {
+      throw new Error(`Only ${variant.stock} of ${product.title} left in stock.`);
+    }
 
-    if (existingLineIndex > -1) {
-      cart.lines[existingLineIndex].quantity += quantity;
+    if (existing) {
+      existing.quantity = wanted;
+      existing.product = product;
+      existing.variant = variant;
     } else {
       const lineId = `line-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
-      cart.lines.push({
-        id: lineId,
-        product,
-        variant,
-        quantity,
-      });
+      cart.lines.push({ id: lineId, product, variant, quantity: qty });
     }
 
     this.recalculateCart(cart);
@@ -229,6 +275,10 @@ export class SupabaseCommerceRepository implements CommerceRepository {
       if (quantity <= 0) {
         cart.lines.splice(lineIndex, 1);
       } else {
+        const stock = cart.lines[lineIndex].variant.stock;
+        if (stock !== undefined && quantity > stock) {
+          throw new Error(`Only ${stock} left in stock.`);
+        }
         cart.lines[lineIndex].quantity = quantity;
       }
     }
@@ -253,40 +303,17 @@ export class SupabaseCommerceRepository implements CommerceRepository {
 
 export class SupabaseContentRepository implements ContentRepository {
   async getHomepageContent(): Promise<HomepageContent> {
-    try {
-      const settings = await this.getSiteSettings();
-      if (settings?.hero) {
-        return {
-          ...MOCK_HOMEPAGE_CONTENT,
-          hero: {
-            eyebrow: settings.hero.eyebrow || MOCK_HOMEPAGE_CONTENT.hero.eyebrow,
-            headline: settings.hero.headline || MOCK_HOMEPAGE_CONTENT.hero.headline,
-            subheadline:
-              settings.hero.subheadline || MOCK_HOMEPAGE_CONTENT.hero.subheadline,
-            primaryCtaText:
-              settings.hero.primaryCtaText || MOCK_HOMEPAGE_CONTENT.hero.primaryCtaText,
-            primaryCtaLink:
-              settings.hero.primaryCtaLink || MOCK_HOMEPAGE_CONTENT.hero.primaryCtaLink,
-            secondaryCtaText:
-              settings.hero.secondaryCtaText || MOCK_HOMEPAGE_CONTENT.hero.secondaryCtaText,
-            secondaryCtaLink:
-              settings.hero.secondaryCtaLink || MOCK_HOMEPAGE_CONTENT.hero.secondaryCtaLink,
-            backgroundImage:
-              settings.hero.backgroundImage || MOCK_HOMEPAGE_CONTENT.hero.backgroundImage,
-          },
-        };
-      }
-    } catch (err) {
-      console.warn('Could not read site_settings from Supabase for hero, using fallback:', err);
-    }
-
-    return MOCK_HOMEPAGE_CONTENT;
+    // Errors propagate so the page shows a retry state instead of mock content.
+    const settings = await this.getSiteSettings();
+    return { ...MOCK_HOMEPAGE_CONTENT, hero: settings.hero as HomepageContent['hero'] };
   }
 
   async getFounderStory(): Promise<FounderStoryContent> {
     return MOCK_FOUNDER_STORY;
   }
 
+  // Business details (address, GSTIN, contact) come only from the admin-managed row.
+  // Missing values stay empty and the UI hides them; nothing is invented here.
   async getSiteSettings(): Promise<SiteSettings> {
     const { data, error } = await supabase
       .from('site_settings')
@@ -298,67 +325,34 @@ export class SupabaseContentRepository implements ContentRepository {
       throw new Error(`Failed to load site settings: ${error.message}`);
     }
 
-    if (!data) {
-      return {
-        id: 1,
-        hero: {
-          eyebrow: MOCK_HOMEPAGE_CONTENT.hero.eyebrow,
-          headline: MOCK_HOMEPAGE_CONTENT.hero.headline,
-          subheadline: MOCK_HOMEPAGE_CONTENT.hero.subheadline,
-          primaryCtaText: MOCK_HOMEPAGE_CONTENT.hero.primaryCtaText,
-          primaryCtaLink: MOCK_HOMEPAGE_CONTENT.hero.primaryCtaLink,
-          secondaryCtaText: MOCK_HOMEPAGE_CONTENT.hero.secondaryCtaText,
-          secondaryCtaLink: MOCK_HOMEPAGE_CONTENT.hero.secondaryCtaLink,
-          backgroundImage: MOCK_HOMEPAGE_CONTENT.hero.backgroundImage,
-        },
-        store: {
-          name: 'Hilo Arte',
-          address: 'Studio 4, 18 Hill Road, Bandra West, Mumbai 400050',
-          phone: '+91 22 4893 2210',
-          email: 'hello@hiloarte.com',
-          hours: 'Tuesday to Saturday, 11:00 to 18:00',
-          gstin: '27AAPFH1842Q1Z5',
-        },
-        social: {
-          instagram: 'https://instagram.com/hiloarte',
-          pinterest: 'https://pinterest.com/hiloarte',
-          whatsapp: '+91 98200 11024',
-        },
-        announcement: 'Complimentary Express Shipping across India on orders over ₹1499',
-        updated_at: new Date().toISOString(),
-      };
-    }
-
+    const hero = MOCK_HOMEPAGE_CONTENT.hero;
     return {
-      id: data.id || 1,
+      id: data?.id || 1,
       hero: {
-        eyebrow: data.hero?.eyebrow || MOCK_HOMEPAGE_CONTENT.hero.eyebrow,
-        headline: data.hero?.headline || MOCK_HOMEPAGE_CONTENT.hero.headline,
-        subheadline: data.hero?.subheadline || MOCK_HOMEPAGE_CONTENT.hero.subheadline,
-        primaryCtaText: data.hero?.primaryCtaText || MOCK_HOMEPAGE_CONTENT.hero.primaryCtaText,
-        primaryCtaLink: data.hero?.primaryCtaLink || MOCK_HOMEPAGE_CONTENT.hero.primaryCtaLink,
-        secondaryCtaText:
-          data.hero?.secondaryCtaText || MOCK_HOMEPAGE_CONTENT.hero.secondaryCtaText,
-        secondaryCtaLink:
-          data.hero?.secondaryCtaLink || MOCK_HOMEPAGE_CONTENT.hero.secondaryCtaLink,
-        backgroundImage:
-          data.hero?.backgroundImage || MOCK_HOMEPAGE_CONTENT.hero.backgroundImage,
+        eyebrow: data?.hero?.eyebrow || hero.eyebrow,
+        headline: data?.hero?.headline || hero.headline,
+        subheadline: data?.hero?.subheadline || hero.subheadline,
+        primaryCtaText: data?.hero?.primaryCtaText || hero.primaryCtaText,
+        primaryCtaLink: data?.hero?.primaryCtaLink || hero.primaryCtaLink,
+        secondaryCtaText: data?.hero?.secondaryCtaText || hero.secondaryCtaText,
+        secondaryCtaLink: data?.hero?.secondaryCtaLink || hero.secondaryCtaLink,
+        backgroundImage: data?.hero?.backgroundImage || hero.backgroundImage,
       },
       store: {
-        name: data.store?.name || 'Hilo Arte',
-        address: data.store?.address || 'Studio 4, 18 Hill Road, Bandra West, Mumbai 400050',
-        phone: data.store?.phone || '+91 22 4893 2210',
-        email: data.store?.email || 'hello@hiloarte.com',
-        hours: data.store?.hours || 'Tuesday to Saturday, 11:00 to 18:00',
-        gstin: data.store?.gstin || '27AAPFH1842Q1Z5',
+        name: data?.store?.name || '',
+        address: data?.store?.address || '',
+        phone: data?.store?.phone || '',
+        email: data?.store?.email || '',
+        hours: data?.store?.hours || '',
+        gstin: data?.store?.gstin || '',
       },
       social: {
-        instagram: data.social?.instagram || 'https://instagram.com/hiloarte',
-        pinterest: data.social?.pinterest || 'https://pinterest.com/hiloarte',
-        whatsapp: data.social?.whatsapp || '+91 98200 11024',
+        instagram: data?.social?.instagram || '',
+        pinterest: data?.social?.pinterest || '',
+        whatsapp: data?.social?.whatsapp || '',
       },
-      announcement: data.announcement ?? '',
-      updated_at: data.updated_at || new Date().toISOString(),
+      announcement: data?.announcement ?? '',
+      updated_at: data?.updated_at || new Date().toISOString(),
     };
   }
 

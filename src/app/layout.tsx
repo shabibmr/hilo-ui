@@ -23,9 +23,14 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://hiloarte.com"),
   title: "HILO ARTE — Luxury Embroidery Experiences & DIY Kits",
   description: "Beginner embroidery experiences designed to slow down and create. Handcrafted luxury kits, guided lessons, and slow-living art in India.",
   keywords: ["Embroidery Kits", "Luxury DIY Kits", "Beginner Embroidery", "Handcrafted India", "Slow Living", "HILO ARTE"],
+  openGraph: {
+    siteName: "HILO ARTE",
+    images: [{ url: "/images/hero/hero-fairy-moon.jpg" }],
+  },
 };
 
 export default function RootLayout({

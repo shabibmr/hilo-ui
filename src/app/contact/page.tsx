@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/commerce/cart-drawer';
@@ -9,10 +9,11 @@ import { SectionHeading } from '@/components/common/section-heading';
 import { CtaButton } from '@/components/common/cta-button';
 import { Mail, MessageCircle, Globe, CheckCircle, Loader2 } from 'lucide-react';
 import { contentRepository } from '@/lib/data/providers';
-import type { SiteSettings } from '@/lib/data/types';
+import { useSiteSettings } from '@/lib/data/use-live';
+import { DataErrorState } from '@/components/common/error-retry';
 
 export default function ContactPage() {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const { settings, error: settingsError, reload: reloadSettings } = useSiteSettings();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -20,22 +21,6 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    contentRepository
-      .getSiteSettings()
-      .then((data) => {
-        if (active) setSettings(data);
-      })
-      .catch((err) => {
-        console.warn('Could not load site settings on contact page:', err);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,10 +45,10 @@ export default function ContactPage() {
     }
   };
 
-  const storeEmail = settings?.store?.email || 'hello@hiloarte.com';
-  const storePhone = settings?.social?.whatsapp || settings?.store?.phone || '+91 98200 11024';
+  const storeEmail = settings?.store?.email || '';
+  const storePhone = settings?.social?.whatsapp || settings?.store?.phone || '';
   const whatsappClean = storePhone.replace(/[^0-9]/g, '');
-  const storeAddress = settings?.store?.address || 'Studio 4, 18 Hill Road, Bandra West, Mumbai 400050';
+  const storeAddress = settings?.store?.address || '';
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
@@ -80,6 +65,16 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-5xl mx-auto">
             {/* Direct Contact Channels */}
             <div className="lg:col-span-5 space-y-6">
+              {settingsError ? (
+                <DataErrorState
+                  title="Unable to load studio address"
+                  message={settingsError}
+                  onRetry={reloadSettings}
+                  className="my-0"
+                />
+              ) : (
+                <>
+              {storeEmail && (
               <a
                 href={`mailto:${storeEmail}`}
                 className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4 hover:ring-gold/30 transition-all block"
@@ -95,7 +90,9 @@ export default function ContactPage() {
                   </span>
                 </div>
               </a>
+              )}
 
+              {whatsappClean && (
               <a
                 href={`https://wa.me/${whatsappClean}`}
                 target="_blank"
@@ -113,7 +110,9 @@ export default function ContactPage() {
                   </span>
                 </div>
               </a>
+              )}
 
+              {storeAddress && (
               <div className="bg-white p-6 rounded-2xl ring-1 ring-wine/5 flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-wine/5 flex items-center justify-center text-gold flex-shrink-0">
                   <Globe className="w-6 h-6" />
@@ -128,6 +127,9 @@ export default function ContactPage() {
                   )}
                 </div>
               </div>
+              )}
+                </>
+              )}
             </div>
 
             {/* Interactive Contact Form */}

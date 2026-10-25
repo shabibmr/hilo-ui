@@ -52,6 +52,49 @@ export function isMockMode(): boolean {
   return !isSupabaseConfigured();
 }
 
+// ---------- Hilo API (NEXT_PUBLIC_DATA_MODE=api) ----------
+// Sign-in stays on Supabase Auth; data calls go to the API with the access token.
+
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+
+function apiMode(): boolean {
+  return !isMockMode() && process.env.NEXT_PUBLIC_DATA_MODE === 'api';
+}
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+/** JSON in and out. A Blob body is sent as-is with its own content type (image uploads). */
+async function request<T = void>(method: string, path: string, body?: unknown): Promise<T> {
+  if (!API_URL) throw new Error('NEXT_PUBLIC_API_URL is not configured.');
+  const { data } = await supabase.auth.getSession();
+  const headers: Record<string, string> = {};
+  if (data.session) headers.Authorization = `Bearer ${data.session.access_token}`;
+  let payload: BodyInit | undefined;
+  if (body instanceof Blob) {
+    headers['Content-Type'] = body.type;
+    payload = body;
+  } else if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    payload = JSON.stringify(body);
+  }
+
+  const res = await fetch(`${API_URL}/api/v1/admin${path}`, { method, headers, body: payload });
+  if (res.status === 401) {
+    // AuthContext listens for the sign-out and sends the user to the login page.
+    await supabase.auth.signOut();
+    throw new ApiError(401, 'Your session has expired. Sign in again.');
+  }
+  if (res.status === 403) throw new ApiError(403, 'You are not authorised to use the admin.');
+  if (res.status === 204) return undefined as T;
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, json?.error || `Request failed (${res.status}).`);
+  return json as T;
+}
+
 // ---------- Auth ----------
 
 export async function getSession(): Promise<Session | null> {
@@ -87,6 +130,7 @@ export async function signOut(): Promise<void> {
 
 export async function getDashboardCounts(): Promise<DashboardCounts> {
   if (isMockMode()) return mock.getDashboardCounts();
+  if (apiMode()) return request<DashboardCounts>('GET', '/dashboard/counts');
   const head = { count: 'exact', head: true } as const;
   const [products, lowStock, collections, orders, pendingOrders, enquiries] = await Promise.all([
     supabase.from('products').select('*', head),
@@ -111,6 +155,7 @@ export async function getDashboardCounts(): Promise<DashboardCounts> {
 
 export async function listProducts(): Promise<Product[]> {
   if (isMockMode()) return mock.listProducts();
+  if (apiMode()) return request<Product[]>('GET', '/products');
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -121,6 +166,7 @@ export async function listProducts(): Promise<Product[]> {
 
 export async function getProduct(id: string): Promise<Product> {
   if (isMockMode()) return mock.getProduct(id);
+  if (apiMode()) return request<Product>('GET', `/products/${id}`);
   const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
   if (error) throw error;
   return data as Product;
@@ -129,6 +175,10 @@ export async function getProduct(id: string): Promise<Product> {
 export async function createProduct(input: ProductInput): Promise<void> {
   if (isMockMode()) {
     mock.createProduct(input);
+    return;
+  }
+  if (apiMode()) {
+    await request('POST', '/products', input);
     return;
   }
   const { error } = await supabase.from('products').insert([input]);
@@ -148,6 +198,10 @@ export async function updateProduct(id: string, input: Partial<ProductInput>): P
     mock.updateProduct(id, input);
     return;
   }
+  if (apiMode()) {
+    await request('PATCH', `/products/${id}`, input);
+    return;
+  }
   const { data, error } = await supabase.from('products').update(input).eq('id', id).select('id');
   if (error) throw error;
   requireAffected(data, 'The product');
@@ -156,6 +210,10 @@ export async function updateProduct(id: string, input: Partial<ProductInput>): P
 export async function setProductPublished(id: string, published: boolean): Promise<void> {
   if (isMockMode()) {
     mock.setProductPublished(id, published);
+    return;
+  }
+  if (apiMode()) {
+    await request('PATCH', `/products/${id}/published`, { published });
     return;
   }
   const { data, error } = await supabase
@@ -172,6 +230,11 @@ export async function deleteProduct(id: string): Promise<void> {
     mock.deleteProduct(id);
     return;
   }
+  if (apiMode()) {
+    const row = await request<{ images?: ImageAsset[] }>('DELETE', `/products/${id}`);
+    await Promise.all((row.images || []).map((image) => deleteImageByUrl(image.url)));
+    return;
+  }
   const { data, error } = await supabase.from('products').delete().eq('id', id).select('id, images');
   if (error) throw error;
   requireAffected(data, 'The deletion');
@@ -185,6 +248,10 @@ export async function listCollections(
   orderBy: 'sort_order' | 'title' = 'sort_order'
 ): Promise<Collection[]> {
   if (isMockMode()) return mock.listCollections(orderBy);
+  if (apiMode()) {
+    const rows = await request<Collection[]>('GET', '/collections');
+    return orderBy === 'title' ? [...rows].sort((a, b) => a.title.localeCompare(b.title)) : rows;
+  }
   const { data, error } = await supabase
     .from('collections')
     .select('*')
@@ -198,6 +265,10 @@ export async function createCollection(input: CollectionInput): Promise<void> {
     mock.createCollection(input);
     return;
   }
+  if (apiMode()) {
+    await request('POST', '/collections', input);
+    return;
+  }
   const { error } = await supabase.from('collections').insert([input]);
   if (error) throw error;
 }
@@ -205,6 +276,10 @@ export async function createCollection(input: CollectionInput): Promise<void> {
 export async function updateCollection(id: string, input: CollectionInput): Promise<void> {
   if (isMockMode()) {
     mock.updateCollection(id, input);
+    return;
+  }
+  if (apiMode()) {
+    await request('PATCH', `/collections/${id}`, input);
     return;
   }
   const { data, error } = await supabase.from('collections').update(input).eq('id', id).select('id');
@@ -216,6 +291,13 @@ export async function updateCollection(id: string, input: CollectionInput): Prom
 export async function countProductsInCollection(handle: string): Promise<number> {
   if (isMockMode()) {
     return mock.listProducts().filter((product) => product.collections?.includes(handle)).length;
+  }
+  if (apiMode()) {
+    const { count } = await request<{ count: number }>(
+      'GET',
+      `/collections/${encodeURIComponent(handle)}/product-count`
+    );
+    return count;
   }
   const { count, error } = await supabase
     .from('products')
@@ -230,6 +312,10 @@ export async function setCollectionPublished(id: string, published: boolean): Pr
     mock.setCollectionPublished(id, published);
     return;
   }
+  if (apiMode()) {
+    await request('PATCH', `/collections/${id}/published`, { published });
+    return;
+  }
   const { data, error } = await supabase
     .from('collections')
     .update({ published })
@@ -242,6 +328,11 @@ export async function setCollectionPublished(id: string, published: boolean): Pr
 export async function deleteCollection(id: string): Promise<void> {
   if (isMockMode()) {
     mock.deleteCollection(id);
+    return;
+  }
+  if (apiMode()) {
+    const row = await request<{ image?: ImageAsset | null }>('DELETE', `/collections/${id}`);
+    if (row.image?.url) await deleteImageByUrl(row.image.url);
     return;
   }
   const { data, error } = await supabase
@@ -261,6 +352,10 @@ const BUCKET_NAME = 'product-images';
 
 export async function uploadImageFile(file: File, folder = 'products'): Promise<ImageAsset> {
   if (isMockMode()) return mock.uploadImageFile(file);
+  if (apiMode()) {
+    const query = `folder=${encodeURIComponent(folder)}&name=${encodeURIComponent(file.name)}`;
+    return request<ImageAsset>('POST', `/uploads/images?${query}`, file);
+  }
   const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const cleanName = file.name
     .replace(/\.[^/.]+$/, '')
@@ -287,6 +382,14 @@ export async function uploadImageFile(file: File, folder = 'products'): Promise<
 
 export async function deleteImageByUrl(url: string): Promise<void> {
   if (isMockMode()) return;
+  if (apiMode()) {
+    try {
+      await request('DELETE', '/uploads/images', { url });
+    } catch (err) {
+      console.warn('Failed to delete image from storage:', err);
+    }
+    return;
+  }
   try {
     const bucketMarker = `/${BUCKET_NAME}/`;
     const index = url.indexOf(bucketMarker);
@@ -305,6 +408,7 @@ export async function deleteImageByUrl(url: string): Promise<void> {
 
 export async function listOrders(): Promise<Order[]> {
   if (isMockMode()) return mock.listOrders();
+  if (apiMode()) return request<Order[]>('GET', '/orders');
   const { data, error } = await supabase
     .from('orders')
     .select('*')
@@ -325,6 +429,8 @@ export async function getOrderBundle(id: string): Promise<OrderBundle> {
       holdReleased: mock.holdIsReleased(id),
     };
   }
+
+  if (apiMode()) return request<OrderBundle>('GET', `/orders/${id}`);
 
   const { data: order, error } = await supabase.from('orders').select('*').eq('id', id).single();
   if (error) throw error;
@@ -360,6 +466,10 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
     mock.updateOrderStatus(id, status);
     return;
   }
+  if (apiMode()) {
+    await request('PATCH', `/orders/${id}/status`, { status });
+    return;
+  }
   // One database transaction: status, stock restore on cancel, and invoice number.
   const { error } = await supabase.rpc('set_order_status', { p_order: id, p_status: status });
   if (error) throw error;
@@ -369,6 +479,7 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
 
 export async function getInvoice(id: string): Promise<Invoice> {
   if (isMockMode()) return mock.getInvoice(id);
+  if (apiMode()) return request<Invoice>('GET', `/orders/${id}/invoice`);
   const { data, error } = await supabase.from('invoices').select('*').eq('id', id).single();
   if (error) throw error;
   return data as Invoice;
@@ -377,6 +488,7 @@ export async function getInvoice(id: string): Promise<Invoice> {
 /** Returns the order's invoice, issuing the next HA- number if it has none yet. */
 export async function createInvoice(orderId: string): Promise<Invoice> {
   if (isMockMode()) return mock.createInvoice(orderId);
+  if (apiMode()) return request<Invoice>('POST', `/orders/${orderId}/invoice`);
   const { data, error } = await supabase.rpc('ensure_invoice', { p_order: orderId });
   if (error) throw error;
   return data as Invoice;
@@ -387,6 +499,10 @@ export async function releasePendingHold(id: string): Promise<void> {
     mock.releasePendingHold(id);
     return;
   }
+  if (apiMode()) {
+    await request('POST', `/orders/${id}/release-hold`);
+    return;
+  }
   // Cancelling puts the held stock back in the same transaction.
   await updateOrderStatus(id, 'cancelled');
 }
@@ -394,6 +510,10 @@ export async function releasePendingHold(id: string): Promise<void> {
 export async function refundOrder(id: string): Promise<void> {
   if (isMockMode()) {
     mock.refundOrder(id);
+    return;
+  }
+  if (apiMode()) {
+    await request('POST', `/orders/${id}/refund`);
     return;
   }
   const { data, error } = await supabase.functions.invoke('refund-order', {
@@ -409,6 +529,12 @@ export async function verifyPayment(
   if (isMockMode()) {
     return mock.verifyPayment(id);
   }
+  if (apiMode()) {
+    return request<{ verified: boolean; status: OrderStatus; message: string }>(
+      'POST',
+      `/orders/${id}/verify-payment`
+    );
+  }
   const { data, error } = await supabase.functions.invoke('verify-payment', {
     body: { orderId: id },
   });
@@ -421,6 +547,7 @@ export async function verifyPayment(
 
 export async function listEnquiries(): Promise<Enquiry[]> {
   if (isMockMode()) return mock.listEnquiries();
+  if (apiMode()) return request<Enquiry[]>('GET', '/enquiries');
   const { data, error } = await supabase
     .from('enquiries')
     .select('*')
@@ -434,6 +561,10 @@ export async function setEnquiryHandled(id: string, handled: boolean): Promise<v
     mock.setEnquiryHandled(id, handled);
     return;
   }
+  if (apiMode()) {
+    await request('PATCH', `/enquiries/${id}/handled`, { handled });
+    return;
+  }
   const { data, error } = await supabase.from('enquiries').update({ handled }).eq('id', id).select('id');
   if (error) throw error;
   requireAffected(data, 'The enquiry change');
@@ -443,6 +574,7 @@ export async function setEnquiryHandled(id: string, handled: boolean): Promise<v
 
 export async function listCustomers(): Promise<Customer[]> {
   if (isMockMode()) return mock.listCustomers();
+  if (apiMode()) return request<Customer[]>('GET', '/customers');
   const { data, error } = await supabase.from('customers').select('*').order('name');
   if (error) throw error;
   return (data as Customer[]) || [];
@@ -450,6 +582,7 @@ export async function listCustomers(): Promise<Customer[]> {
 
 export async function getCustomer(id: string): Promise<Customer> {
   if (isMockMode()) return mock.getCustomer(id);
+  if (apiMode()) return request<Customer>('GET', `/customers/${id}`);
   const { data, error } = await supabase.from('customers').select('*').eq('id', id).single();
   if (error) throw error;
   return data as Customer;
@@ -457,6 +590,7 @@ export async function getCustomer(id: string): Promise<Customer> {
 
 export async function listCustomerOrders(customerId: string): Promise<Order[]> {
   if (isMockMode()) return mock.ordersForCustomer(customerId);
+  if (apiMode()) return request<Order[]>('GET', `/customers/${customerId}/orders`);
   const { data, error } = await supabase
     .from('orders')
     .select('*')
@@ -470,6 +604,7 @@ export async function listCustomerOrders(customerId: string): Promise<Order[]> {
 
 export async function listSuppliers(): Promise<Supplier[]> {
   if (isMockMode()) return mock.listSuppliers();
+  if (apiMode()) return request<Supplier[]>('GET', '/suppliers');
   const { data, error } = await supabase.from('suppliers').select('*').order('name');
   if (error) throw error;
   return (data as Supplier[]) || [];
@@ -479,6 +614,11 @@ export async function saveSupplier(
   input: Omit<Supplier, 'id'> & { id?: string }
 ): Promise<Supplier> {
   if (isMockMode()) return mock.saveSupplier(input);
+  if (apiMode()) {
+    return input.id
+      ? request<Supplier>('PATCH', `/suppliers/${input.id}`, input)
+      : request<Supplier>('POST', '/suppliers', input);
+  }
   if (input.id) {
     const { data, error } = await supabase
       .from('suppliers')
@@ -499,12 +639,17 @@ export async function deleteSupplier(id: string): Promise<void> {
     mock.deleteSupplier(id);
     return;
   }
+  if (apiMode()) {
+    await request('DELETE', `/suppliers/${id}`);
+    return;
+  }
   const { error } = await supabase.from('suppliers').delete().eq('id', id);
   if (error) throw error;
 }
 
 export async function getPurchase(id: string): Promise<mock.PurchaseRecord> {
   if (isMockMode()) return mock.getPurchase(id);
+  if (apiMode()) return request<mock.PurchaseRecord>('GET', `/purchases/${id}`);
   const { data, error } = await supabase
     .from('purchase_invoices')
     .select('*, items:purchase_items(*)')
@@ -516,6 +661,7 @@ export async function getPurchase(id: string): Promise<mock.PurchaseRecord> {
 
 export async function listPurchases(): Promise<mock.PurchaseRecord[]> {
   if (isMockMode()) return mock.listPurchases();
+  if (apiMode()) return request<mock.PurchaseRecord[]>('GET', '/purchases');
   const { data, error } = await supabase
     .from('purchase_invoices')
     .select('*')
@@ -538,6 +684,10 @@ export async function listPurchases(): Promise<mock.PurchaseRecord[]> {
 export async function createPurchase(input: PurchaseDraft): Promise<void> {
   if (isMockMode()) {
     mock.createPurchase(input);
+    return;
+  }
+  if (apiMode()) {
+    await request('POST', '/purchases', input);
     return;
   }
   // One database transaction: bill, lines and stock increase succeed or fail together.
@@ -577,8 +727,14 @@ const defaultSocial = { instagram: '', pinterest: '', whatsapp: '' };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   if (isMockMode()) return mock.getSettings();
-  const { data, error } = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle();
-  if (error) throw error;
+  let data: Partial<SiteSettings> | null;
+  if (apiMode()) {
+    data = await request<Partial<SiteSettings> | null>('GET', '/settings');
+  } else {
+    const res = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle();
+    if (res.error) throw res.error;
+    data = res.data;
+  }
   if (!data) {
     return {
       id: 1,
@@ -595,7 +751,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     store: { ...defaultStore, ...(data.store || {}) },
     social: { ...defaultSocial, ...(data.social || {}) },
     announcement: data.announcement ?? '',
-    updated_at: data.updated_at,
+    updated_at: data.updated_at ?? new Date().toISOString(),
   };
 }
 
@@ -604,6 +760,10 @@ export async function saveSiteSettings(
 ): Promise<void> {
   if (isMockMode()) {
     mock.saveSettings(input);
+    return;
+  }
+  if (apiMode()) {
+    await request('PUT', '/settings', input);
     return;
   }
   const { error } = await supabase.from('site_settings').upsert([

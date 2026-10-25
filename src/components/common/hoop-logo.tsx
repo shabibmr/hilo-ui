@@ -47,7 +47,7 @@ export const HoopLogo: React.FC<HoopLogoProps> = ({
             HILO ARTE
           </span>
           <span className="font-accent italic text-xs tracking-wider text-antique-gold font-normal">
-            slow embroidery
+            Stitch beauty into your life
           </span>
         </div>
       )}

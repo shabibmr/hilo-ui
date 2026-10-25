@@ -1,70 +1,47 @@
-# Storefront Phase 5: task list
+# Storefront and read API
 
 Status: `[ ]` todo, `[~]` in progress, `[x]` done.
 
-Spec: `docs/frontend/GAPS_REPORT.md`. Steps and file names: `docs/frontend/IMPLEMENTATION_PLAN.md`.
+Spec: `docs/frontend/IMPLEMENTATION_PLAN.md`.
 
-Owner of every row below is the storefront. Edge Functions, schema, seed, and admin screens stay on `docs/backend/TASKS.md`.
+Two lanes run at the same time. Lane 1 does not wait on the server. Lane 2 starts with the scaffold, then each row after its predecessor. One worker per lane.
 
-## Phase A — Runtime catalog
+## Done (do not redo)
 
-- [ ] A1. Add `src/lib/catalog/use-catalog.ts` with `{ data, error, loading, retry }` and a loader argument
-- [ ] A2. Homepage best sellers and hero load in a client section. `src/app/page.tsx` does not await the repository
-- [ ] A3. Collection page loads the collection and its products in a client section. `generateStaticParams` stays for handles known at build time
-- [ ] A4. Product page loads the product in a client section. The built HTML does not contain the product JSON from build time
-- [ ] A5. Write `docs/frontend/STATIC_ROUTES.md`: nginx must fall back unknown `/hilo/products/*` and `/hilo/collections/*` to a client shell, or a new handle 404s until the next export
-- [ ] A6. Verify: `npm run build` with `NEXT_PUBLIC_DATA_PROVIDER=mock`. Product page shows a loading state, then the product. A bad Supabase URL shows `DataErrorState`, not mock kits
+- [x] `useLive` loads the homepage, collection, and product in the browser.
+- [x] `[handle]` pages are shells. `generateStaticParams` keeps handles known at build time. Product cards link to `/products/view/?handle=`.
+- [x] `CommerceRepository` and `ContentRepository`.
+- [x] Browser cart in Zustand (`hilo-arte-cart-storage`).
+- [x] Sold-out buttons use `availableForSale`. Plus stops at `variant.stock` when the number is present.
+- [x] Guest checkout fields. `placeOrder` posts to the `create-order` Edge Function with nested `customer.shippingAddress` and items of `{ productId, quantity }`.
+- [x] Homepage layout aligned to `docs/mockups/hilo-editorial-luxury.html`, except the copy rows in Lane 1.
+- [x] Edge Functions `create-order`, `verify-payment`, `razorpay-webhook`, and `release-expired-orders`. Do not rebuild them.
 
-## Phase B — No stand-in content
+## Lane 1 — storefront, no server
 
-- [ ] B1. `getSiteSettings` returns the row or throws. Remove the Bandra address, phone, email, GSTIN, and announcement defaults
-- [ ] B2. `getHomepageContent` throws when settings fail. It does not return `MOCK_HOMEPAGE_CONTENT` from the catch
-- [ ] B3. Promo bar, footer, and contact render `DataErrorState` with `onRetry` when settings fail
-- [ ] B4. Provider `supabase` with a missing URL throws at startup in every environment, including production. Remove the placeholder client path for that case
-- [ ] B5. Verify: `rg "27AAPFH1842Q1Z5|Studio 4, 18 Hill Road" src` finds nothing. Retry on the homepage calls the loader again
+- [x] L1. Mock provider sets `variant.stock` on every returned product. An existing fixture `stock` wins. Otherwise use a positive number when `availableForSale` is true and `0` when it is false. Returned `availableForSale` is `stock > 0`. Check: one fixture at `stock: 0` shows "Sold out" on the card and the product page, and the cart does not open. Restore that fixture.
+- [x] L2. Image paths in `src/lib/data/mock/`, `hero-section.tsx`, and `collections-nav-section.tsx` start with `/images/`. Accessories in `collectionsNav` is `badge: 'Coming Soon'`, `isComingSoon: true`, and the nav card links to `/coming-soon`. Check: a local product image requests `/hilo/images/...` once.
+- [x] L3. `useSiteSettings` returns `reload` and drops its cache on retry. Promo bar, the footer store block, and the contact address column render `DataErrorState` with that reload. The footer Accessories link is `/coming-soon`. The enquiry form still submits.
+- [x] L4. Add `src/app/(shop)/collections/view/page.tsx` on the pattern of `products/view`. Write one paragraph in `docs/frontend/STATIC_ROUTES.md`: query shells are `/products/view/?handle=` and `/collections/view/?handle=`; a bare unknown handle 404s until the next export. Check: `/collections/view/?handle=diy-kits` shows that collection.
+- [x] L5. `PaymentCancelled` message is `Payment was not completed. Your items stay reserved for 15 minutes.` Stay on checkout. Do not change the request URL or body.
+- [x] L6. Checkout drops the ₹99 / ₹1499 total. Line prices and the subtotal are a preview. The pay button does not print that subtotal as the amount due. Mock submit goes to `/checkout/confirmation/?preview=1`. Supabase submit still calls `placeOrder` and then `/checkout/confirmation/?order=`.
+- [x] L7. Confirmation with no `order` and no `preview` shows `DataErrorState` and a link to `/checkout`. `preview=1` says no order was placed and no payment was taken. A non-empty `order` shows that id.
+- [x] L8. Remove the ₹1499 / ₹99 claim from the cart drawer, the product page, `faq/page.tsx`, and `policies/shipping/page.tsx`. Keep dispatch timing. Do not add a new fee.
+- [x] L9. `HoopLogo` tagline is `Stitch beauty into your life`. `WhyHiloSection` shows the fixed ritual cell and all six cards. The headline and paragraph are the ones in the plan.
+- [x] L10. In `src/app/layout.tsx`, set `metadataBase`, `og:site_name` `HILO ARTE`, and one default `og:image`. Add `src/app/robots.ts` that allows the public pages and disallows `/checkout` and `/checkout/confirmation`.
 
-## Phase C — Stock
+## Lane 2 — read API
 
-- [ ] C1. Add `stock: number` to `Product`. Map it in the Supabase provider and the mock provider
-- [ ] C2. `AddToCartButton` shows "Sold out" at `stock <= 0` and does not call `addItem`. Plus stops at `stock`
-- [ ] C3. `ProductCard` shows the same sold-out state and disables add
-- [ ] C4. Verify: one mock product at stock 0 shows sold out on the card and the product page, and the cart does not open. Restore that stock before finishing
+- [x] B0. Scaffold `server/` with TypeScript, Express, CORS, and `.env`. Listen on port 4000. Leave a single mount for `/api/v1`.
+- [x] B1. After B0. Supabase client with `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_URL`. No `pg` pool.
+- [x] B2. After B1. `server/src/routes/catalog.ts` implements the five catalog routes in the plan. Published rows only. `GET /collections/:handle` returns a `Collection` with no `products` array. Check with an HTTP client: a published product is returned, a draft is not, and best sellers match `is_best_seller`.
+- [x] B3. After B1. `server/src/routes/content.ts` implements `GET /settings` and `POST /enquiries`. Missing settings row is 404. Enquiry success is 204. Check both with an HTTP client.
+- [x] A1. After B2 and B3 are specified. `src/lib/data/providers/api-provider.ts` calls `${NEXT_PUBLIC_API_URL}/api/v1` for the seven methods. A non-OK settings response throws. Cart methods use an in-memory `Map`. Homepage and founder content stay on the mock modules.
+- [x] A2. After A1. `index.ts` accepts `NEXT_PUBLIC_DATA_PROVIDER=api`. It is opt-in. Document `NEXT_PUBLIC_API_URL` in `.env.local.example`. Do not make `api` the production default in this row.
 
-## Phase D — Images
+## Close-out
 
-- [ ] D1. `next.config.ts` `images.remotePatterns` allows `https://*.supabase.co` storage object URLs
-- [ ] D2. Image paths in mock data and section fallbacks use `/images/...`, not `/hilo/images/...`
-- [ ] D3. Verify: a local product image requests `/hilo/images/...` once. An absolute Supabase Storage URL renders
-
-## Phase E — Checkout call site
-
-Depends on the `create-order` Edge Function contract in the implementation plan. The function itself is backend work.
-
-- [ ] E1. Add `src/lib/checkout/place-order.ts` with `placeOrder(PlaceOrderInput): Promise<PlaceOrderResult>`
-- [ ] E2. Checkout submit sends ids, quantities, and the shipping contact, then opens Razorpay with the amount and key id from the response
-- [ ] E3. Razorpay success navigates to `/checkout/confirmation/?orderId=`. Dismiss shows the 15-minute hold message and stays on checkout
-- [ ] E4. Confirmation with no `orderId` shows `DataErrorState`. With an id, it shows that id
-- [ ] E5. Verify: the invoke body has no price field. Confirmation without a query param does not say the order was received
-
-## Phase F — Editorial mockup deltas
-
-- [ ] F1. `HoopLogo` tagline is `Stitch beauty into your life`
-- [ ] F2. Accessories is coming soon and does not link to a live collection grid
-- [ ] F3. Philosophy section shows the large ritual cell plus all six cards, including Beginner Friendly
-- [ ] F4. Verify on `/` at desktop and at 375px: tagline, Accessories badge, six cards plus the large cell
-
-## Phase G — Close-out
-
-- [ ] G1. `npm run lint` passes
-- [ ] G2. `npm run build` passes
-- [ ] G3. Browser, provider `mock`: `/`, `/collections/diy-kits/`, `/products/blooming-roses/`, cart open and close, checkout form, contact page. Desktop and 375px
-- [ ] G4. Browser, provider `supabase`, only with a real URL and anon key: same routes use database rows, a draft product is hidden, contact insert lands in `enquiries`
-- [ ] G5. Mark the matching Phase 5 rows in `docs/backend/TASKS.md` done. Leave Phase 5b Edge Function rows as they are
-
-## Already done (do not redo)
-
-- [x] Repository interfaces and a mock provider
-- [x] Supabase mapper for published products, collections, best sellers, one default variant, enquiries, and hero field names
-- [x] Browser cart in Zustand
-- [x] Homepage aligned to `docs/mockups/hilo-editorial-luxury.html`, except the three Phase F items
-- [x] Guest checkout form fields (the submit path is Phase E)
+- [x] G1. `npm run lint` passes.
+- [x] G2. `npm run build` passes.
+- [~] G3. Browser, provider `mock`, desktop and 375px: `/`, `/collections/diy-kits/`, `/collections/view/?handle=diy-kits`, `/products/blooming-roses/`, `/products/view/?handle=blooming-roses`, cart open and close, checkout through `?preview=1`, contact page. Tagline, Accessories badge, and six philosophy cards plus the ritual cell are visible on `/`.
+- [ ] G4. Browser, provider `api`, with the server running and a real service-role key: the same routes show database rows, a draft product is hidden, and a contact insert lands in `enquiries`. An unreachable `NEXT_PUBLIC_API_URL` shows `DataErrorState` on the hero, promo bar, footer, and contact address, with a working retry. After this pass, set the production default provider to `api`.
