@@ -1,18 +1,25 @@
+import { getApiBaseUrl } from '@/lib/api-url';
 import { CommerceRepository, ContentRepository } from '../repository';
 import { Cart, Collection, FounderStoryContent, HomepageContent, Product, SiteSettings } from '../types';
+
+export { getApiBaseUrl };
 
 const apiCarts = new Map<string, Cart>();
 
 function apiBase(): string {
-  const base = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
-  if (!base) {
-    throw new Error('NEXT_PUBLIC_API_URL is not configured.');
-  }
-  return `${base}/api/v1`;
+  return `${getApiBaseUrl()}/api/v1`;
 }
 
 async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${apiBase()}${path}`);
+  const base = apiBase();
+  let res: Response;
+  try {
+    res = await fetch(`${base}${path}`);
+  } catch (err) {
+    throw new Error(
+      `API ${path} is unreachable: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
   if (!res.ok) {
     throw new Error(`API ${path} failed (${res.status})`);
   }
@@ -35,7 +42,15 @@ export class ApiCommerceRepository implements CommerceRepository {
 
   async getProductByHandle(handle: string): Promise<Product | null> {
     if (!handle || !handle.trim()) return null;
-    const res = await fetch(`${apiBase()}/products/${encodeURIComponent(handle.trim())}`);
+    const base = apiBase();
+    let res: Response;
+    try {
+      res = await fetch(`${base}/products/${encodeURIComponent(handle.trim())}`);
+    } catch (err) {
+      throw new Error(
+        `API /products/${handle} is unreachable: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`API /products/${handle} failed (${res.status})`);
     return res.json() as Promise<Product>;
@@ -51,7 +66,15 @@ export class ApiCommerceRepository implements CommerceRepository {
 
   async getCollectionByHandle(handle: string): Promise<Collection | null> {
     if (!handle || !handle.trim()) return null;
-    const res = await fetch(`${apiBase()}/collections/${encodeURIComponent(handle.trim())}`);
+    const base = apiBase();
+    let res: Response;
+    try {
+      res = await fetch(`${base}/collections/${encodeURIComponent(handle.trim())}`);
+    } catch (err) {
+      throw new Error(
+        `API /collections/${handle} is unreachable: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`API /collections/${handle} failed (${res.status})`);
     return res.json() as Promise<Collection>;
@@ -152,7 +175,15 @@ export class ApiCommerceRepository implements CommerceRepository {
 
   private async getProductById(productId: string): Promise<Product | null> {
     if (!productId || !productId.trim()) return null;
-    const res = await fetch(`${apiBase()}/products/id/${encodeURIComponent(productId.trim())}`);
+    const base = apiBase();
+    let res: Response;
+    try {
+      res = await fetch(`${base}/products/id/${encodeURIComponent(productId.trim())}`);
+    } catch (err) {
+      throw new Error(
+        `API /products/id/${productId} is unreachable: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`API /products/id/${productId} failed (${res.status})`);
     return res.json() as Promise<Product>;
@@ -177,7 +208,15 @@ export class ApiContentRepository implements ContentRepository {
   }
 
   async getSiteSettings(): Promise<SiteSettings> {
-    const res = await fetch(`${apiBase()}/settings`);
+    const base = apiBase();
+    let res: Response;
+    try {
+      res = await fetch(`${base}/settings`);
+    } catch (err) {
+      throw new Error(
+        `API /settings is unreachable: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
     if (!res.ok) {
       throw new Error(`API /settings failed (${res.status})`);
     }
@@ -190,11 +229,19 @@ export class ApiContentRepository implements ContentRepository {
     message: string;
     kind?: 'contact' | 'workshop';
   }): Promise<void> {
-    const res = await fetch(`${apiBase()}/enquiries`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    });
+    const base = apiBase();
+    let res: Response;
+    try {
+      res = await fetch(`${base}/enquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+    } catch (err) {
+      throw new Error(
+        `API /enquiries is unreachable: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
     if (!res.ok) {
       const errBody = (await res.json().catch(() => null)) as {
         error?: string | { message?: string };
