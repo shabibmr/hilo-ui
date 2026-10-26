@@ -4,6 +4,7 @@ import type { Cart } from '@/lib/data/types';
 export interface CheckoutCustomer {
   firstName: string;
   lastName: string;
+  fullName?: string;
   email: string;
   phone: string;
   street: string;
@@ -39,6 +40,11 @@ export class PaymentCancelled extends Error {
   }
 }
 
+/** Formats customer first and last name once into a consistent full name string. */
+export function formatCustomerName(firstName?: string, lastName?: string): string {
+  return [firstName, lastName].map((s) => s?.trim()).filter(Boolean).join(' ').trim();
+}
+
 function loadRazorpayScript(): Promise<void> {
   if (window.Razorpay) return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -65,7 +71,7 @@ function createOrder(body: unknown): Promise<Response> {
  * Razorpay reports success; the webhook is what actually marks the order paid.
  */
 export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promise<string> {
-  const fullName = `${customer.firstName} ${customer.lastName}`.trim();
+  const fullName = customer.fullName?.trim() || formatCustomerName(customer.firstName, customer.lastName);
   const res = await createOrder({
     customer: {
       name: fullName,
@@ -83,17 +89,24 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
     items: cart.lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
   });
 
-  const order = (await res.json().catch(() => ({}))) as CreateOrderResponse;
+  const order = (await res.json().catch(() => ({}))) as Partial<CreateOrderResponse>;
   const rawError = order.error;
   const errorMessage =
     typeof rawError === 'string'
       ? rawError
-      : rawError?.message || 'We could not place your order. Please try again.';
+      : rawError?.message ||
+        (res.status === 503
+          ? 'Online payments are currently unavailable.'
+          : 'We could not place your order. Please try again.');
+
   if (!res.ok || !order.orderId) {
+    if (res.status === 503 || errorMessage.includes('Online payments are currently unavailable')) {
+      throw new Error('Online payments are currently unavailable.');
+    }
     throw new Error(errorMessage);
   }
   if (!order.keyId) {
-    throw new Error('Online payments are not enabled yet. Your order was not charged.');
+    throw new Error('Online payments are currently unavailable.');
   }
 
   await loadRazorpayScript();
@@ -112,7 +125,7 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
         email: customer.email,
         contact: customer.phone,
       },
-      handler: () => resolve(order.orderId),
+      handler: () => resolve(order.orderId!),
       modal: { ondismiss: () => reject(new PaymentCancelled()) },
     });
     rzp.on('payment.failed', (r) =>

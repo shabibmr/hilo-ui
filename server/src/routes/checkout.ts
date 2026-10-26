@@ -1,11 +1,8 @@
 import { Router } from 'express';
-import { rateLimit, sendError, wrap } from '../http.js';
+import { rateLimit, wrap } from '../http.js';
 import { supabase } from '../supabase.js';
 
 const router = Router();
-
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 
@@ -31,10 +28,10 @@ router.post(
       }
     }
 
-    // Check the gateway before reserving stock so a payment outage never strands an order.
-    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      console.error('RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET not set; refusing to create an order.');
-      return sendError(res, 503, 'PAYMENT_UNAVAILABLE', 'Online payment is temporarily unavailable. You have not been charged.');
+    const razorpayKeyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+    const razorpayKeySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      return res.status(503).json({ error: 'Online payments are currently unavailable.' });
     }
 
     const { data: result, error: dbError } = await supabase.rpc('create_order_atomic', {
@@ -54,26 +51,35 @@ router.post(
 
     const orderId: string = result.order_id;
     const amount = Math.round(Number(result.subtotal) * 100);
-    const rzp = await fetch('https://api.razorpay.com/v1/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64')}`,
-      },
-      body: JSON.stringify({
-        amount,
-        currency: 'INR',
-        receipt: `rcpt_${orderId.slice(0, 10)}`,
-        notes: { hilo_order_id: orderId, customer_email: str(customer.email) },
-      }),
-    });
-    if (!rzp.ok) {
-      console.error('Razorpay order creation failed:', await rzp.text());
+    let razorpayOrderId: string;
+
+    try {
+      const rzp = await fetch('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString('base64')}`,
+        },
+        body: JSON.stringify({
+          amount,
+          currency: 'INR',
+          receipt: `rcpt_${orderId.slice(0, 10)}`,
+          notes: { hilo_order_id: orderId, customer_email: str(customer.email) },
+        }),
+      });
+      if (!rzp.ok) {
+        console.error('Razorpay order creation failed:', await rzp.text());
+        // Release the reserved stock.
+        await supabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
+        return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
+      }
+      razorpayOrderId = ((await rzp.json()) as { id: string }).id;
+    } catch (err) {
+      console.error('Razorpay order creation failed:', err);
       // Release the reserved stock.
       await supabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
       return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
     }
-    const razorpayOrderId = ((await rzp.json()) as { id: string }).id;
 
     await supabase.from('orders').update({ razorpay_order_id: razorpayOrderId }).eq('id', orderId);
 
@@ -83,7 +89,7 @@ router.post(
       razorpayOrderId,
       amount,
       currency: 'INR',
-      keyId: RAZORPAY_KEY_ID,
+      keyId: razorpayKeyId,
       customer: { name: customer.name, email: customer.email, phone: customer.phone },
     });
   })
