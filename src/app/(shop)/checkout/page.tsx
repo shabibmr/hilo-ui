@@ -44,7 +44,7 @@ export default function CheckoutPage() {
 
     // Mock catalogue has no order backend: keep the demo flow for local development.
     const provider = process.env.NEXT_PUBLIC_DATA_PROVIDER || process.env.DATA_PROVIDER;
-    if (provider !== 'supabase') {
+    if (provider === 'mock' || !provider) {
       router.push('/checkout/confirmation/?preview=1');
       return;
     }
