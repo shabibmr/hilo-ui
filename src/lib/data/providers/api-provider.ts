@@ -1,14 +1,5 @@
 import { CommerceRepository, ContentRepository } from '../repository';
-import {
-  Cart,
-  Collection,
-  FounderStoryContent,
-  HomepageContent,
-  Product,
-  SiteSettings,
-} from '../types';
-import { MOCK_HOMEPAGE_CONTENT } from '../mock/homepage-content';
-import { MOCK_FOUNDER_STORY } from '../mock/founder';
+import { Cart, Collection, FounderStoryContent, HomepageContent, Product, SiteSettings } from '../types';
 
 const apiCarts = new Map<string, Cart>();
 
@@ -173,12 +164,11 @@ export class ApiCommerceRepository implements CommerceRepository {
 
 export class ApiContentRepository implements ContentRepository {
   async getHomepageContent(): Promise<HomepageContent> {
-    const settings = await this.getSiteSettings();
-    return { ...MOCK_HOMEPAGE_CONTENT, hero: settings.hero as HomepageContent['hero'] };
+    return apiGet<HomepageContent>('/content/homepage');
   }
 
   async getFounderStory(): Promise<FounderStoryContent> {
-    return MOCK_FOUNDER_STORY;
+    return apiGet<FounderStoryContent>('/content/founder');
   }
 
   async getSiteSettings(): Promise<SiteSettings> {

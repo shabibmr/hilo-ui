@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { contentRepository } from '@/lib/data/providers';
 import { Header } from '@/components/layout/header';
@@ -7,6 +9,8 @@ import { Container } from '@/components/common/container';
 import { SectionHeading } from '@/components/common/section-heading';
 import { CtaButton } from '@/components/common/cta-button';
 import { BeeCompanion } from '@/components/motion/bee-companion';
+import { DataErrorState } from '@/components/common/error-retry';
+import { useLive } from '@/lib/data/use-live';
 import { FileText, Circle, Feather, Pin, Smile, Book, QrCode, Layers, Folder } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -21,8 +25,11 @@ const iconMap: Record<string, React.ReactNode> = {
   Folder: <Folder className="w-8 h-8 text-gold" />,
 };
 
-export default async function WhatsInsidePage() {
-  const content = await contentRepository.getHomepageContent();
+export default function WhatsInsidePage() {
+  const { data: content, error, loading, reload } = useLive(
+    () => contentRepository.getHomepageContent(),
+    []
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
@@ -40,28 +47,38 @@ export default async function WhatsInsidePage() {
             <BeeCompanion size={40} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            {content.kitContentsItems.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white p-8 rounded-2xl ring-1 ring-wine/5 hover:border-gold transition-all duration-300 hover:shadow-gold-glow flex flex-col items-center text-center space-y-4"
-              >
-                <div className="w-16 h-16 rounded-full bg-wine/5 flex items-center justify-center border border-gold/30">
-                  {iconMap[item.icon] || <FileText className="w-8 h-8 text-gold" />}
-                </div>
-                <h3 className="font-display text-xl font-medium text-wine">{item.name}</h3>
-                <p className="font-body text-sm text-wine/70 font-light leading-relaxed">
-                  {item.description}
-                </p>
+          {error ? (
+            <div className="py-24">
+              <DataErrorState message={error} onRetry={reload} />
+            </div>
+          ) : loading || !content ? (
+            <div className="min-h-[50vh]" aria-busy="true" />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                {content.kitContentsItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-white p-8 rounded-2xl ring-1 ring-wine/5 hover:border-gold transition-all duration-300 hover:shadow-gold-glow flex flex-col items-center text-center space-y-4"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-wine/5 flex items-center justify-center border border-gold/30">
+                      {iconMap[item.icon] || <FileText className="w-8 h-8 text-gold" />}
+                    </div>
+                    <h3 className="font-display text-xl font-medium text-wine">{item.name}</h3>
+                    <p className="font-body text-sm text-wine/70 font-light leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <div className="text-center">
-            <CtaButton href="/collections/diy-kits" size="lg">
-              Start Your First Stitch
-            </CtaButton>
-          </div>
+              <div className="text-center">
+                <CtaButton href="/collections/diy-kits" size="lg">
+                  Start Your First Stitch
+                </CtaButton>
+              </div>
+            </>
+          )}
         </Container>
       </main>
 

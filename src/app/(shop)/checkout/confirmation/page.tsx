@@ -13,14 +13,13 @@ import { CheckCircle2 } from 'lucide-react';
 function ConfirmationBody() {
   const params = useSearchParams();
   const orderId = params.get('order');
-  const preview = params.get('preview');
 
-  if (!orderId && preview !== '1') {
+  if (!orderId) {
     return (
       <div className="space-y-4 text-center">
         <DataErrorState
           title="Missing order reference"
-          message="This confirmation page needs an order id or a preview flag."
+          message="This confirmation page needs an order id."
         />
         <Link
           href="/checkout"
@@ -28,25 +27,6 @@ function ConfirmationBody() {
         >
           Return to checkout
         </Link>
-      </div>
-    );
-  }
-
-  if (preview === '1' && !orderId) {
-    return (
-      <div className="bg-white p-8 sm:p-12 rounded-2xl ring-1 ring-wine/5 text-center space-y-6 shadow-wine-sm">
-        <span className="text-eyebrow text-xs tracking-[0.25em] text-gold font-accent block">
-          — PREVIEW —
-        </span>
-        <h1 className="font-display text-h1 text-wine">No order was placed.</h1>
-        <p className="font-body text-base text-wine/70 font-light max-w-md mx-auto leading-relaxed">
-          This was a mock checkout. No payment was taken and nothing was reserved.
-        </p>
-        <div className="pt-4">
-          <CtaButton href="/" variant="solid-gold">
-            Return to Homepage
-          </CtaButton>
-        </div>
       </div>
     );
   }
@@ -68,13 +48,11 @@ function ConfirmationBody() {
         and are carefully preparing your presentation kit.
       </p>
 
-      {orderId ? (
-        <p className="font-body text-xs text-wine/60">
-          Order reference: <span className="font-mono">{orderId}</span>
-          <br />
-          Your payment is being confirmed by our bank and you&apos;ll get an email shortly.
-        </p>
-      ) : null}
+      <p className="font-body text-xs text-wine/60">
+        Order reference: <span className="font-mono">{orderId}</span>
+        <br />
+        Your payment is being confirmed by our bank and you&apos;ll get an email shortly.
+      </p>
 
       <div className="pt-4">
         <CtaButton href="/" variant="solid-gold">

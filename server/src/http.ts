@@ -36,6 +36,15 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
   next();
 }
 
+/** Lightweight helmet-style headers. No extra dependency. */
+export function securityHeaders(_req: Request, res: Response, next: NextFunction): void {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  next();
+}
+
 /**
  * Simple fixed-window per-IP limiter. Returns true when the request should be rejected.
  * Shared Maps are fine for a single Node process on this host.
@@ -62,4 +71,64 @@ export function rateLimit(limit: number, windowMs: number): RequestHandler {
     }
     next();
   };
+}
+
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 200;
+
+export type Pagination =
+  | { enabled: false }
+  | { enabled: true; page: number; limit: number; from: number; to: number };
+
+/**
+ * Opt-in pagination. Without `page` or `limit`, callers still get the full array.
+ * With either param: page defaults to 1, limit to 50 (max 200). Body stays a JSON array;
+ * totals go in `X-Total-Count`, `X-Page`, and `X-Limit`.
+ */
+export function readPagination(
+  query: Request['query'],
+  opts?: { defaultLimit?: number; maxLimit?: number }
+): Pagination | { error: string } {
+  const hasPage = query.page !== undefined && query.page !== '';
+  const hasLimit = query.limit !== undefined && query.limit !== '';
+  if (!hasPage && !hasLimit) return { enabled: false };
+
+  const defaultLimit = opts?.defaultLimit ?? DEFAULT_PAGE_SIZE;
+  const maxLimit = opts?.maxLimit ?? MAX_PAGE_SIZE;
+
+  const pageRaw = hasPage ? Number(query.page) : 1;
+  const limitRaw = hasLimit ? Number(query.limit) : defaultLimit;
+
+  if (!Number.isInteger(pageRaw) || pageRaw < 1) {
+    return { error: 'page must be a positive integer' };
+  }
+  if (!Number.isInteger(limitRaw) || limitRaw < 1 || limitRaw > maxLimit) {
+    return { error: `limit must be an integer from 1 to ${maxLimit}` };
+  }
+
+  const from = (pageRaw - 1) * limitRaw;
+  return { enabled: true, page: pageRaw, limit: limitRaw, from, to: from + limitRaw - 1 };
+}
+
+export function setPaginationHeaders(
+  res: Response,
+  total: number,
+  page: number,
+  limit: number
+): void {
+  res.setHeader('X-Total-Count', String(total));
+  res.setHeader('X-Page', String(page));
+  res.setHeader('X-Limit', String(limit));
+  res.setHeader('Access-Control-Expose-Headers', 'X-Total-Count, X-Page, X-Limit, X-Request-Id');
+}
+
+/** Parse CORS_ORIGIN into cors() `origin` option. `*` (or empty) reflects any origin for local dev. */
+export function parseCorsOrigin(raw: string | undefined): boolean | string[] {
+  const value = (raw ?? '*').trim();
+  if (!value || value === '*') return true;
+  const list = value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return list.length > 0 ? list : true;
 }

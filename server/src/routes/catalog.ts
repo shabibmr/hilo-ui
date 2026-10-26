@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import { sendError, wrap } from '../http.js';
+import { readPagination, sendError, setPaginationHeaders, wrap } from '../http.js';
 import { supabase } from '../supabase.js';
 
 const CACHE = 'public, max-age=60';
@@ -170,12 +170,19 @@ router.get(
       }
     }
 
+    const pgResult = readPagination(req.query);
+    if ('error' in pgResult) {
+      fieldErrors.pagination = pgResult.error;
+    }
+
     if (Object.keys(fieldErrors).length > 0) {
       sendError(res, 400, 'VALIDATION_ERROR', 'Invalid query parameters', { fields: fieldErrors });
       return;
     }
+    const pg = 'error' in pgResult ? { enabled: false as const } : pgResult;
 
-    let query = supabase.from('products').select('*').eq('published', true);
+    const selectOpts = pg.enabled ? ({ count: 'exact' } as const) : undefined;
+    let query = supabase.from('products').select('*', selectOpts).eq('published', true);
 
     if (difficulty) {
       query = query.eq('difficulty', difficulty);
@@ -188,12 +195,20 @@ router.get(
       query = query.contains('collections', [collection]);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: true }).order('handle');
+    query = query.order('created_at', { ascending: true }).order('handle');
+    if (pg.enabled) {
+      query = query.range(pg.from, pg.to);
+    }
+
+    const { data, error, count } = await query;
     if (error) {
       sendError(res, 500, 'DB_ERROR', error.message);
       return;
     }
 
+    if (pg.enabled) {
+      setPaginationHeaders(res, count ?? 0, pg.page, pg.limit);
+    }
     res.setHeader('Cache-Control', CACHE);
     res.json((data || []).map(mapProduct));
   })
@@ -225,16 +240,33 @@ router.get(
 
 router.get(
   '/collections',
-  wrap(async (_req: Request, res: Response) => {
-    const { data, error } = await supabase
+  wrap(async (req: Request, res: Response) => {
+    const pgResult = readPagination(req.query);
+    if ('error' in pgResult) {
+      sendError(res, 400, 'VALIDATION_ERROR', 'Invalid query parameters', {
+        fields: { pagination: pgResult.error },
+      });
+      return;
+    }
+    const pg = pgResult;
+
+    const selectOpts = pg.enabled ? ({ count: 'exact' } as const) : undefined;
+    let query = supabase
       .from('collections')
-      .select('*')
+      .select('*', selectOpts)
       .eq('published', true)
       .order('sort_order', { ascending: true });
+    if (pg.enabled) {
+      query = query.range(pg.from, pg.to);
+    }
 
+    const { data, error, count } = await query;
     if (error) {
       sendError(res, 500, 'DB_ERROR', error.message);
       return;
+    }
+    if (pg.enabled) {
+      setPaginationHeaders(res, count ?? 0, pg.page, pg.limit);
     }
     res.setHeader('Cache-Control', CACHE);
     res.json((data || []).map(mapCollection));

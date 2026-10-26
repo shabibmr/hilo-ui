@@ -10,7 +10,7 @@ export interface CommerceRepository {
   getCart(cartId: string): Promise<Cart | null>;
   /**
    * Reconciles backend cart state with a client-persisted cart before mutating it.
-   * The mock provider's in-memory store doesn't survive a page reload, while the
+   * The provider's in-memory cart store doesn't survive a page reload, while the
    * client (localStorage via Zustand) does — this call reseeds the backend record
    * so line items aren't lost. A real Shopify provider would use the equivalent of
    * this for cart-merge/associate-on-load rather than a no-op.

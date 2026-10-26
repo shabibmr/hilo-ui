@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
 import { contentRepository } from '@/lib/data/providers';
@@ -5,9 +7,14 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { CartDrawer } from '@/components/commerce/cart-drawer';
 import { Container } from '@/components/common/container';
+import { DataErrorState } from '@/components/common/error-retry';
+import { useLive } from '@/lib/data/use-live';
 
-export default async function FounderStoryPage() {
-  const story = await contentRepository.getFounderStory();
+export default function FounderStoryPage() {
+  const { data: story, error, loading, reload } = useLive(
+    () => contentRepository.getFounderStory(),
+    []
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-warm text-wine font-body">
@@ -15,39 +22,49 @@ export default async function FounderStoryPage() {
 
       <main className="flex-1 pt-10 pb-20">
         <Container size="sm">
-          <div className="text-center space-y-4 mb-12">
-            <span className="text-eyebrow text-xs tracking-[0.25em] text-gold font-accent">
-              — OUR FOUNDER —
-            </span>
-            <h1 className="font-display text-h1 text-wine">
-              {story.headline}
-            </h1>
-            <p className="font-accent italic text-lg text-gold font-normal">
-              {story.subheadline}
-            </p>
-          </div>
-
-          <div className="space-y-6 font-body text-base text-wine/80 font-light leading-relaxed bg-white/70 p-8 rounded-2xl ring-1 ring-wine/5">
-            {story.storyParagraphs.map((para, idx) => (
-              <p key={idx}>{para}</p>
-            ))}
-
-            <blockquote className="border-l-2 border-gold pl-6 py-2 my-8 font-accent italic text-xl text-gold font-normal">
-              &ldquo;{story.quote}&rdquo;
-            </blockquote>
-          </div>
-
-          {story.galleryImages && story.galleryImages.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-12">
-              {story.galleryImages.map((img) => (
-                <div
-                  key={img.url}
-                  className="relative aspect-square rounded-xl overflow-hidden ring-1 ring-wine/5"
-                >
-                  <Image src={img.url} alt={img.altText} fill className="object-cover" />
-                </div>
-              ))}
+          {error ? (
+            <div className="py-24">
+              <DataErrorState message={error} onRetry={reload} />
             </div>
+          ) : loading || !story ? (
+            <div className="min-h-[50vh]" aria-busy="true" />
+          ) : (
+            <>
+              <div className="text-center space-y-4 mb-12">
+                <span className="text-eyebrow text-xs tracking-[0.25em] text-gold font-accent">
+                  — OUR FOUNDER —
+                </span>
+                <h1 className="font-display text-h1 text-wine">
+                  {story.headline}
+                </h1>
+                <p className="font-accent italic text-lg text-gold font-normal">
+                  {story.subheadline}
+                </p>
+              </div>
+
+              <div className="space-y-6 font-body text-base text-wine/80 font-light leading-relaxed bg-white/70 p-8 rounded-2xl ring-1 ring-wine/5">
+                {story.storyParagraphs.map((para, idx) => (
+                  <p key={idx}>{para}</p>
+                ))}
+
+                <blockquote className="border-l-2 border-gold pl-6 py-2 my-8 font-accent italic text-xl text-gold font-normal">
+                  &ldquo;{story.quote}&rdquo;
+                </blockquote>
+              </div>
+
+              {story.galleryImages && story.galleryImages.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-12">
+                  {story.galleryImages.map((img) => (
+                    <div
+                      key={img.url}
+                      className="relative aspect-square rounded-xl overflow-hidden ring-1 ring-wine/5"
+                    >
+                      <Image src={img.url} alt={img.altText} fill className="object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </Container>
       </main>

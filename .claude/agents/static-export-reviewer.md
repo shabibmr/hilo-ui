@@ -14,7 +14,7 @@ Run `git diff HEAD` (plus untracked files from `git status --short`) unless the 
 ## Checklist
 1. **Dynamic routes**: every `[param]` route page needs `generateStaticParams` returning all values to prerender, and must not rely on `dynamicParams` at runtime. Runtime-only data (e.g. a product loaded by query string) belongs on a client page such as `products/view/`.
 2. **Server-only features**: route handlers (`route.ts`), server actions (`'use server'`), `cookies()`/`headers()`, `middleware`/`proxy`, `revalidate`/ISR, `next/image` optimizer, rewrites/redirects in config. All unsupported or inert in export.
-3. **Env vars**: only `NEXT_PUBLIC_*` reach the browser, and they are inlined at build time. Flag server-only vars (e.g. `DATA_PROVIDER`) read in client code, and any secret (service-role keys) that could be bundled.
+3. **Env vars**: only `NEXT_PUBLIC_*` reach the browser, and they are inlined at build time. Flag server-only vars (anything without the `NEXT_PUBLIC_` prefix) read in client code, and any secret (service-role keys) that could be bundled.
 4. **Data fetching**: build-time fetches must work without a request context; runtime data must be fetched client-side (see `src/lib/data/use-live.ts`).
 5. **basePath**: plain `<img src>`, CSS `url()`, `fetch('/...')` and `<a href>` to public assets need the `/hilo` prefix; `next/link` and router handle it automatically. Images are unoptimized, so `next/image` needs no loader but also gets no resizing.
 6. **trailingSlash**: internal links and hard-coded paths should be consistent with trailing slashes.

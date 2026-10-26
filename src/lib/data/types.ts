@@ -12,7 +12,7 @@ export interface ProductVariant {
   title: string;
   price: number;
   availableForSale: boolean;
-  /** Units on hand when the provider knows it (Supabase). */
+  /** Units on hand when the API reports it. */
   stock?: number;
   sku?: string;
 }

@@ -1,6 +1,8 @@
 import { Router, type NextFunction, type Request, type RequestHandler, type Response } from 'express';
 import express from 'express';
 import { requireAdmin } from '../auth.js';
+import { readPagination, setPaginationHeaders } from '../http.js';
+import { normalizeHandleOnUpdate, requireHandle } from '../slug.js';
 import { supabase } from '../supabase.js';
 
 const BUCKET = 'product-images';
@@ -53,19 +55,50 @@ function body(req: Request): Record<string, unknown> {
 
 const id = (req: Request) => String(req.params.id);
 
-function crud(path: string, table: string, orderBy: string, ascending = true) {
-  router.get(`/admin/${path}`, wrap(async (_req, res) => {
-    const { data, error } = await supabase.from(table).select('*').order(orderBy, { ascending });
+type Prepare = (row: Record<string, unknown>) => Record<string, unknown>;
+
+function parseListPagination(req: Request) {
+  const pg = readPagination(req.query);
+  if ('error' in pg) throw new HttpError(400, pg.error);
+  return pg;
+}
+
+function crud(
+  path: string,
+  table: string,
+  orderBy: string,
+  ascending = true,
+  opts?: { prepareCreate?: Prepare; prepareUpdate?: Prepare }
+) {
+  router.get(`/admin/${path}`, wrap(async (req, res) => {
+    const pg = parseListPagination(req);
+    const selectOpts = pg.enabled ? ({ count: 'exact' } as const) : undefined;
+    let query = supabase.from(table).select('*', selectOpts).order(orderBy, { ascending });
+    if (pg.enabled) query = query.range(pg.from, pg.to);
+    const { data, error, count } = await query;
     check(error);
+    if (pg.enabled) setPaginationHeaders(res, count ?? 0, pg.page, pg.limit);
     res.json(data ?? []);
   }));
   router.post(`/admin/${path}`, wrap(async (req, res) => {
-    const { data, error } = await supabase.from(table).insert([body(req)]).select('*').single();
+    let row = body(req);
+    try {
+      if (opts?.prepareCreate) row = opts.prepareCreate(row);
+    } catch (e) {
+      throw new HttpError(400, e instanceof Error ? e.message : 'Invalid body');
+    }
+    const { data, error } = await supabase.from(table).insert([row]).select('*').single();
     check(error);
     res.status(201).json(data);
   }));
   router.patch(`/admin/${path}/:id`, wrap(async (req, res) => {
-    const { data, error } = await supabase.from(table).update(body(req)).eq('id', id(req)).select('*');
+    let row = body(req);
+    try {
+      if (opts?.prepareUpdate) row = opts.prepareUpdate(row);
+    } catch (e) {
+      throw new HttpError(400, e instanceof Error ? e.message : 'Invalid body');
+    }
+    const { data, error } = await supabase.from(table).update(row).eq('id', id(req)).select('*');
     check(error);
     res.json(found(data, 'Record')[0]);
   }));
@@ -145,7 +178,10 @@ router.delete('/admin/uploads/images', wrap(async (req, res) => {
 
 // ---------- Collections ----------
 
-crud('collections', 'collections', 'sort_order');
+crud('collections', 'collections', 'sort_order', true, {
+  prepareCreate: requireHandle,
+  prepareUpdate: normalizeHandleOnUpdate,
+});
 router.get('/admin/collections/:handle/product-count', wrap(async (req, res) => {
   const { count, error } = await supabase
     .from('products')
@@ -164,7 +200,10 @@ router.patch('/admin/collections/:id/published', wrap(async (req, res) => {
 
 // ---------- Products ----------
 
-crud('products', 'products', 'created_at', false);
+crud('products', 'products', 'created_at', false, {
+  prepareCreate: requireHandle,
+  prepareUpdate: normalizeHandleOnUpdate,
+});
 router.get('/admin/products/:id', wrap(async (req, res) => {
   const { data, error } = await supabase.from('products').select('*').eq('id', id(req)).maybeSingle();
   check(error);
@@ -181,9 +220,25 @@ router.patch('/admin/products/:id/published', wrap(async (req, res) => {
 
 // ---------- Orders ----------
 
-router.get('/admin/orders', wrap(async (_req, res) => {
-  const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+const STATUSES = ['pending', 'paid', 'shipped', 'delivered', 'cancelled', 'refunded'];
+
+router.get('/admin/orders', wrap(async (req, res) => {
+  const pg = parseListPagination(req);
+  const status =
+    typeof req.query.status === 'string' && req.query.status.trim()
+      ? req.query.status.trim()
+      : undefined;
+  if (status && !STATUSES.includes(status)) {
+    throw new HttpError(400, 'Unknown order status filter.');
+  }
+
+  const selectOpts = pg.enabled ? ({ count: 'exact' } as const) : undefined;
+  let query = supabase.from('orders').select('*', selectOpts).order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  if (pg.enabled) query = query.range(pg.from, pg.to);
+  const { data, error, count } = await query;
   check(error);
+  if (pg.enabled) setPaginationHeaders(res, count ?? 0, pg.page, pg.limit);
   res.json(data ?? []);
 }));
 
@@ -208,8 +263,6 @@ router.get('/admin/orders/:id', wrap(async (req, res) => {
     holdReleased: false,
   });
 }));
-
-const STATUSES = ['pending', 'paid', 'shipped', 'delivered', 'cancelled', 'refunded'];
 
 async function setStatus(orderId: string, status: string) {
   const { error } = await supabase.rpc('set_order_status', { p_order: orderId, p_status: status });
@@ -325,9 +378,28 @@ router.post('/admin/orders/:id/verify-payment', wrap(async (req, res) => {
 
 // ---------- Enquiries ----------
 
-router.get('/admin/enquiries', wrap(async (_req, res) => {
-  const { data, error } = await supabase.from('enquiries').select('*').order('created_at', { ascending: false });
+router.get('/admin/enquiries', wrap(async (req, res) => {
+  const pg = parseListPagination(req);
+  const handledRaw =
+    typeof req.query.handled === 'string' ? req.query.handled.trim().toLowerCase() : '';
+  const kind =
+    typeof req.query.kind === 'string' && req.query.kind.trim()
+      ? req.query.kind.trim()
+      : undefined;
+
+  const selectOpts = pg.enabled ? ({ count: 'exact' } as const) : undefined;
+  let query = supabase
+    .from('enquiries')
+    .select('*', selectOpts)
+    .order('created_at', { ascending: false });
+  if (handledRaw === 'true' || handledRaw === 'false') {
+    query = query.eq('handled', handledRaw === 'true');
+  }
+  if (kind) query = query.eq('kind', kind);
+  if (pg.enabled) query = query.range(pg.from, pg.to);
+  const { data, error, count } = await query;
   check(error);
+  if (pg.enabled) setPaginationHeaders(res, count ?? 0, pg.page, pg.limit);
   res.json(data ?? []);
 }));
 router.patch('/admin/enquiries/:id/handled', wrap(async (req, res) => {
@@ -340,9 +412,14 @@ router.patch('/admin/enquiries/:id/handled', wrap(async (req, res) => {
 
 // ---------- Customers ----------
 
-router.get('/admin/customers', wrap(async (_req, res) => {
-  const { data, error } = await supabase.from('customers').select('*').order('name');
+router.get('/admin/customers', wrap(async (req, res) => {
+  const pg = parseListPagination(req);
+  const selectOpts = pg.enabled ? ({ count: 'exact' } as const) : undefined;
+  let query = supabase.from('customers').select('*', selectOpts).order('name');
+  if (pg.enabled) query = query.range(pg.from, pg.to);
+  const { data, error, count } = await query;
   check(error);
+  if (pg.enabled) setPaginationHeaders(res, count ?? 0, pg.page, pg.limit);
   res.json(data ?? []);
 }));
 router.get('/admin/customers/:id', wrap(async (req, res) => {
@@ -362,12 +439,17 @@ router.get('/admin/customers/:id/orders', wrap(async (req, res) => {
 
 crud('suppliers', 'suppliers', 'name');
 
-router.get('/admin/purchases', wrap(async (_req, res) => {
-  const { data, error } = await supabase
+router.get('/admin/purchases', wrap(async (req, res) => {
+  const pg = parseListPagination(req);
+  const selectOpts = pg.enabled ? ({ count: 'exact' } as const) : undefined;
+  let query = supabase
     .from('purchase_invoices')
-    .select('*, items:purchase_items(*)')
+    .select('*, items:purchase_items(*)', selectOpts)
     .order('bill_date', { ascending: false });
+  if (pg.enabled) query = query.range(pg.from, pg.to);
+  const { data, error, count } = await query;
   check(error);
+  if (pg.enabled) setPaginationHeaders(res, count ?? 0, pg.page, pg.limit);
   res.json(data ?? []);
 }));
 router.get('/admin/purchases/:id', wrap(async (req, res) => {

@@ -45,3 +45,13 @@ Two lanes run at the same time. Lane 1 does not wait on the server. Lane 2 start
 - [x] G2. `npm run build` passes.
 - [~] G3. Browser, provider `mock`, desktop and 375px: `/`, `/collections/diy-kits/`, `/collections/view/?handle=diy-kits`, `/products/blooming-roses/`, `/products/view/?handle=blooming-roses`, cart open and close, checkout through `?preview=1`, contact page. Tagline, Accessories badge, and six philosophy cards plus the ritual cell are visible on `/`.
 - [ ] G4. Browser, provider `api`, with the server running and a real service-role key: the same routes show database rows, a draft product is hidden, and a contact insert lands in `enquiries`. An unreachable `NEXT_PUBLIC_API_URL` shows `DataErrorState` on the hero, promo bar, footer, and contact address, with a working retry. After this pass, set the production default provider to `api`.
+
+## API-only (ADR 0001): remove mock and direct Supabase
+Order matters. The live API pass (G4) and backend Stage 2 (API checkout) come first. See `docs/backend/API_MIGRATION_PLAN.md` Stage 5.
+- [x] M0. Checkout runs the real flow for every provider except `mock` (it used to run only for `supabase`, so `api` builds showed the mock confirmation).
+- [x] M1. Serve homepage and founder content from the API (settings or a content endpoint). `ApiContentRepository` returns no fixtures.
+- [x] M2. Checkout: `placeOrder` posts to `/api/v1/checkout/orders` only. Delete the Edge Function branch, `NEXT_PUBLIC_CHECKOUT_MODE`, and the Supabase env vars.
+- [x] M3. Delete `src/lib/data/mock/`, `mock-provider.ts`, `supabase-provider.ts`, `src/lib/supabase.ts`, and the `@supabase/supabase-js` dependency. `providers/index.ts` builds only the API repositories and throws without `NEXT_PUBLIC_API_URL`.
+- [x] M4. Delete the `?preview=1` demo branch in `checkout/page.tsx` and the "mock checkout" notice on the confirmation page.
+- [x] M5. `.env.local.example` keeps only `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_BASE_PATH`, and `NEXT_PUBLIC_RAZORPAY_KEY_ID`. Document running `server/` for local development.
+- [x] M6. A search for `mock` and `supabase` in `src/` finds nothing. Lint and build pass. Browser pass on the G3 routes against a running API.

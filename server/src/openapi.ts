@@ -20,6 +20,18 @@ export const openApiDocument = {
             schema: { type: 'string', enum: ['Beginner', 'Intermediate', 'Advanced'] },
           },
           { name: 'maxPrice', in: 'query', schema: { type: 'number', minimum: 0 } },
+          {
+            name: 'page',
+            in: 'query',
+            description: 'Opt-in page (1-based). With limit, sets X-Total-Count headers; body stays Product[].',
+            schema: { type: 'integer', minimum: 1 },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Opt-in page size (default 50, max 200). Omit page and limit for the full list.',
+            schema: { type: 'integer', minimum: 1, maximum: 200 },
+          },
         ],
         responses: {
           '200': { description: 'Product[]' },
@@ -57,6 +69,18 @@ export const openApiDocument = {
     '/collections': {
       get: {
         summary: 'List published collections',
+        parameters: [
+          {
+            name: 'page',
+            in: 'query',
+            schema: { type: 'integer', minimum: 1 },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            schema: { type: 'integer', minimum: 1, maximum: 200 },
+          },
+        ],
         responses: { '200': { description: 'Collection[]' } },
       },
     },
@@ -76,6 +100,22 @@ export const openApiDocument = {
         responses: {
           '200': { description: 'SiteSettings' },
           '404': { description: 'Missing row' },
+        },
+      },
+    },
+    '/content/homepage': {
+      get: {
+        summary: 'Homepage editorial content with hero overlay',
+        responses: {
+          '200': { description: 'HomepageContent' },
+        },
+      },
+    },
+    '/content/founder': {
+      get: {
+        summary: 'Founder story content',
+        responses: {
+          '200': { description: 'FounderStoryContent' },
         },
       },
     },

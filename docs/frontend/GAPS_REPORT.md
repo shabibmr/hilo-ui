@@ -2,6 +2,8 @@
 
 Revised 2026-10-25. Scope: the public storefront in `src/` and the architecture connecting it to the database. The admin app in `admin/` is out of scope except where shared backend contracts and `site_settings` apply.
 
+Target architecture is fixed by `docs/adr/0001-api-only-data-access.md` (API only; no mock or direct Supabase).
+
 The remaining work is specified in `docs/frontend/IMPLEMENTATION_PLAN.md` and tracked in `docs/frontend/TASKS.md`. This document details the gap analysis between the current codebase, the target API backend architecture, and the design specification.
 
 Sources compared:

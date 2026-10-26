@@ -2,7 +2,9 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+The storefront reads all data through the Hilo API in `server/` (there is no mock mode). Start the API first against a development Supabase project (see `server/README.md`), copy `.env.local.example` to `.env.local`, and set `NEXT_PUBLIC_API_URL`.
+
+Then run the development server:
 
 ```bash
 npm run dev

@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { buildHomepageContent, FOUNDER_STORY } from '../content.js';
 import { rateLimit, sendError, wrap } from '../http.js';
 import { supabase } from '../supabase.js';
 
@@ -125,6 +126,25 @@ router.post(
       return;
     }
     res.status(204).send();
+  })
+);
+
+router.get(
+  '/content/homepage',
+  wrap(async (_req: Request, res: Response) => {
+    const { data } = await supabase.from('site_settings').select('hero').eq('id', 1).maybeSingle();
+    const heroSettings = (data?.hero && typeof data.hero === 'object') ? (data.hero as Record<string, unknown>) : null;
+    const content = buildHomepageContent(heroSettings);
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(content);
+  })
+);
+
+router.get(
+  '/content/founder',
+  wrap(async (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(FOUNDER_STORY);
   })
 );
 

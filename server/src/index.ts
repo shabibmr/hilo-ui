@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
-import { rateLimit, requestId, sendError } from './http.js';
+import { parseCorsOrigin, rateLimit, requestId, securityHeaders, sendError } from './http.js';
 import { openApiDocument } from './openapi.js';
 import catalog from './routes/catalog.js';
 import admin from './routes/admin.js';
@@ -12,13 +12,21 @@ import { supabase } from './supabase.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
-const corsOrigin = process.env.CORS_ORIGIN || '*';
+const corsRaw = process.env.CORS_ORIGIN || '*';
+const corsOrigin = parseCorsOrigin(corsRaw);
+
+if (process.env.NODE_ENV === 'production' && (corsRaw.trim() === '*' || corsOrigin === true)) {
+  console.warn(
+    '[hilo-api] WARNING: CORS_ORIGIN is * in production. Set a comma-separated allow-list of storefront and admin origins.'
+  );
+}
 
 app.set('trust proxy', 1);
 app.use(requestId);
+app.use(securityHeaders);
 app.use(
   cors({
-    origin: corsOrigin === '*' ? true : corsOrigin.split(',').map((s) => s.trim()),
+    origin: corsOrigin,
   })
 );
 
@@ -61,5 +69,5 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 app.listen(port, () => {
-  console.log(`hilo read api listening on :${port}`);
+  console.log(`hilo api listening on :${port}`);
 });

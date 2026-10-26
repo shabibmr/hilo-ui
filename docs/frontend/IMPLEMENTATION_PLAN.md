@@ -4,6 +4,8 @@
 
 Revised 2026-10-25 from `docs/frontend/PLAN_SIMPLIFICATION.md`.
 
+> **Updated 2026-10-27 (ADR 0001):** the end state is API-only. The `mock` and `supabase` providers, the Edge Function checkout, and mock homepage/founder content are removed (`docs/backend/API_MIGRATION_PLAN.md` Stage 5; tasks M0-M6 in `docs/frontend/TASKS.md`). Decisions 1, 3, 4, and 5 below describe the interim state.
+
 **Goal:** Serve published catalog, site settings, and enquiries from a small API, point the storefront at it through the existing repositories, and finish the storefront copy and routing fixes that do not need that API.
 
 **Architecture:** `server/` is an Express service that reads and writes through the Supabase service-role client. The storefront keeps `commerceRepository` and `contentRepository`. `api-provider.ts` calls the read API for catalog, settings, and enquiries. Cart methods stay an in-memory map, the same way the Supabase provider works today. Checkout keeps posting to the existing `create-order` Edge Function.
@@ -13,7 +15,7 @@ Revised 2026-10-25 from `docs/frontend/PLAN_SIMPLIFICATION.md`.
 ## Out of this plan
 
 - Rebuilding `create-order`, `verify-payment`, `razorpay-webhook`, or `release-expired-orders`. Those functions stay in `supabase/functions/`.
-- Admin management endpoints.
+- Admin management endpoints, and any second API process. Checkout, webhooks, and `/api/v1/admin` already mount on this same `server/`. The shared-service decision is `docs/backend/API_SERVICE_PLAN.md`. This plan still does not change admin or Edge Function cutover.
 - A `pg` connection pool. The API uses `SUPABASE_SERVICE_ROLE_KEY` only.
 - Per-product Open Graph tags, a product sitemap, JSON-LD inside `ProductView`, and WhatsApp image recompression. Product HTML is fetched in the browser, and `/products/view/?handle=` is one static file, so those tags cannot vary by handle.
 

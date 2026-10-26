@@ -376,6 +376,31 @@ function buildTestApp() {
     res.json(mapSettings(data));
   });
 
+  v1.get('/content/homepage', async (_req, res) => {
+    const { data } = await mockSupabase.from('site_settings').select('*').eq('id', 1).maybeSingle();
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json({
+      hero: {
+        headline: data?.hero?.headline || 'Default Headline',
+        eyebrow: data?.hero?.eyebrow || 'Default Eyebrow',
+      },
+      whyHiloCards: [],
+      collectionsNav: [],
+      bestSellerHandles: [],
+      founderTeaser: {},
+      kitContentsItems: [],
+      creativeJourneySteps: [],
+    });
+  });
+
+  v1.get('/content/founder', async (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json({
+      headline: 'Meet the hands behind HILO ARTE',
+      storyParagraphs: ['Hi, I’m Naima.'],
+    });
+  });
+
   v1.post('/enquiries', async (req, res) => {
     const body = req.body || {};
     const name = typeof body.name === 'string' ? body.name.trim() : '';
@@ -524,6 +549,18 @@ async function runTests() {
     assert.strictEqual(resOas.headers.get('x-request-id'), 'test-req-1');
     const oas = await resOas.json();
     assert.strictEqual(oas.openapi, '3.0.3');
+    console.log('✓ PASS');
+
+    console.log('[TEST 10] Content endpoints (/content/homepage, /content/founder)...');
+    const resHomeContent = await fetch(`${baseUrl}/content/homepage`);
+    assert.strictEqual(resHomeContent.status, 200);
+    const homeContent = await resHomeContent.json();
+    assert.ok(homeContent.hero);
+
+    const resFounderContent = await fetch(`${baseUrl}/content/founder`);
+    assert.strictEqual(resFounderContent.status, 200);
+    const founderContent = await resFounderContent.json();
+    assert.strictEqual(founderContent.headline, 'Meet the hands behind HILO ARTE');
     console.log('✓ PASS');
 
     console.log('\n======================================================');

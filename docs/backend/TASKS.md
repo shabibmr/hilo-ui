@@ -19,7 +19,8 @@ Status: `[ ]` todo, `[~]` in progress, `[x]` done. Owner: U = user, C = Claude.
 ## Phase 2: Admin app scaffold
 - [x] C: Create `admin/` Next + Tailwind project
 - [x] C: Supabase client and `.env.local.example`
-- [x] C: `admin/lib/api.ts` as the only module that calls Supabase (no direct calls in components)
+- [x] C: `admin/lib/api.ts` as the only data module (no direct calls in components)
+- [ ] C: Make `admin/lib/api.ts` API-only: delete mock mode, direct-Supabase data mode, `NEXT_PUBLIC_DATA_MODE` and the email allowlist (decided 2026-10-27; see `API_SERVICE_PLAN.md` Phase 7)
 - [x] C: Login page and auth guard
 - [x] C: Layout with navigation
 
@@ -51,6 +52,9 @@ Status: `[ ]` todo, `[~]` in progress, `[x]` done. Owner: U = user, C = Claude.
 - [x] C: Verify product, collection and best-seller pages with live data
 
 ## Phase 5b: Order Edge Functions
+
+> Retired by ADR 0001 once the API owns checkout and webhooks (`API_MIGRATION_PLAN.md` Stages 2 and 4).
+
 - [x] C: `create-order` function (DB prices, atomic stock decrement, Razorpay order)
 - [x] C: `razorpay-webhook` function (signature check, mark paid)
 - [x] C: Scheduled job releasing stock for pending orders older than 15 minutes
@@ -59,7 +63,7 @@ Status: `[ ]` todo, `[~]` in progress, `[x]` done. Owner: U = user, C = Claude.
 - [x] C: Schema: add `refunded` status, `refund_id`, `refunded_at`; update `set_order_status` (restock on refund)
 - [x] C: `refund-order` Edge Function (admin JWT check, Razorpay refund API, full refund)
 - [x] C: `verify-payment` Edge Function (sync a stuck pending order with Razorpay)
-- [x] C: `refundOrder` and `verifyPayment` in `admin/lib/api.ts` (with mock parity)
+- [x] C: `refundOrder` and `verifyPayment` in `admin/lib/api.ts` (mock parity is dropped with mock mode)
 - [x] C: Orders screen: Refund button, Verify with Razorpay, Razorpay dashboard link
 - [x] C: Block manual "mark as paid" when a `razorpay_payment_id` exists
 - [x] C: Test: refund of a paid order restocks once, a second refund is rejected

@@ -39,10 +39,7 @@ export class PaymentCancelled extends Error {
   }
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
-const CHECKOUT_MODE = process.env.NEXT_PUBLIC_CHECKOUT_MODE === 'api' ? 'api' : 'edge';
 
 function loadRazorpayScript(): Promise<void> {
   if (window.Razorpay) return Promise.resolve();
@@ -55,26 +52,11 @@ function loadRazorpayScript(): Promise<void> {
   });
 }
 
-/** Calls the Edge Function or the API per NEXT_PUBLIC_CHECKOUT_MODE; both return the same shape. */
 function createOrder(body: unknown): Promise<Response> {
-  if (CHECKOUT_MODE === 'api') {
-    if (!API_URL) throw new Error('Checkout is not configured for this environment.');
-    return fetch(`${API_URL}/api/v1/checkout/orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  }
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error('Checkout is not configured for this environment.');
-  }
-  return fetch(`${SUPABASE_URL}/functions/v1/create-order`, {
+  if (!API_URL) throw new Error('Checkout is not configured for this environment.');
+  return fetch(`${API_URL}/api/v1/checkout/orders`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
