@@ -65,13 +65,14 @@ function createOrder(body: unknown): Promise<Response> {
  * Razorpay reports success; the webhook is what actually marks the order paid.
  */
 export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promise<string> {
+  const fullName = `${customer.firstName} ${customer.lastName}`.trim();
   const res = await createOrder({
     customer: {
-      name: `${customer.firstName} ${customer.lastName}`.trim(),
+      name: fullName,
       email: customer.email,
       phone: customer.phone,
       shippingAddress: {
-        fullName: `${customer.firstName} ${customer.lastName}`.trim(),
+        fullName,
         line1: customer.street,
         city: customer.city,
         state: customer.state,
@@ -107,7 +108,7 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
       order_id: order.razorpayOrderId,
       name: 'HILO ARTE',
       prefill: {
-        name: `${customer.firstName} ${customer.lastName}`.trim(),
+        name: fullName,
         email: customer.email,
         contact: customer.phone,
       },

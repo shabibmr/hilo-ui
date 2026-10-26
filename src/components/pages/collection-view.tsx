@@ -50,7 +50,7 @@ export function CollectionView({ handle }: { handle: string }) {
           ) : data?.missing ? (
             <div className="text-center py-16 space-y-3">
               <p className="font-display text-xl text-wine/70">This collection doesn&apos;t exist.</p>
-              <Link href="/collections/all" className="inline-block text-gold underline">
+              <Link href="/collections/view/?handle=all" className="inline-block text-gold underline">
                 Browse all kits
               </Link>
             </div>

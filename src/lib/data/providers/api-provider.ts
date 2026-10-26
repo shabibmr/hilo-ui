@@ -80,8 +80,7 @@ export class ApiCommerceRepository implements CommerceRepository {
     return res.json() as Promise<Collection>;
   }
 
-  async createCart(): Promise<Cart> {
-    const id = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  async createCart(id = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`): Promise<Cart> {
     const newCart: Cart = {
       id,
       lines: [],
@@ -111,7 +110,8 @@ export class ApiCommerceRepository implements CommerceRepository {
   ): Promise<Cart> {
     let cart = apiCarts.get(cartId);
     if (!cart) {
-      cart = await this.createCart();
+      // Keep the caller's cart id; a fresh id would orphan the cart the storefront already holds.
+      cart = await this.createCart(cartId);
     }
 
     const product = await this.getProductById(productId);

@@ -44,7 +44,7 @@ export interface Collection {
   handle: string;
   title: string;
   description: string;
-  image: ImageAsset;
+  image: ImageAsset | null;
   featuredProductHandles: string[];
 }
 

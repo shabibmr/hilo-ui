@@ -57,9 +57,7 @@ function mapCollection(row: DbRow) {
     handle: str(row.handle),
     title: str(row.title),
     description: str(row.description),
-    image: image?.url
-      ? image
-      : { url: '/images/hero/hero-fairy-moon.jpg', altText: str(row.title) },
+    image: image?.url ? image : null,
     featuredProductHandles: list<string>(row.featured_product_handles),
   };
 }

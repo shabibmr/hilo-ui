@@ -25,8 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
   const totalCartCount = cart?.totalQuantity || 0;
 
   const navLinks = [
-    { label: 'Shop Kits', href: '/collections/diy-kits' },
-    { label: 'Gift Experiences', href: '/collections/gift-experiences' },
+    { label: 'Shop Kits', href: '/collections/view/?handle=diy-kits' },
+    { label: 'Gift Experiences', href: '/collections/view/?handle=gift-experiences' },
     { label: 'Workshops', href: '/workshops' },
     { label: 'Customisation', href: '/customisation' },
     { label: 'Gallery', href: '/gallery' },

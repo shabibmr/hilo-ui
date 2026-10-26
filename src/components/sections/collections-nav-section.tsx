@@ -47,7 +47,7 @@ export const CollectionsNavSection: React.FC<CollectionsNavSectionProps> = ({ it
                 ? '/workshops'
                 : item.handle === 'customisation'
                   ? '/customisation'
-                  : `/collections/${item.handle}`;
+                  : `/collections/view/?handle=${item.handle}`;
 
             const imageSrc = collectionImages[item.handle] || '/images/collections/diy-kits.jpg';
             const blurb = collectionBlurbs[item.handle] || '';
