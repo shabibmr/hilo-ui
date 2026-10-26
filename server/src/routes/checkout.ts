@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { rateLimit, wrap } from '../http.js';
 import { supabase } from '../supabase.js';
 
 const router = Router();
@@ -6,42 +7,30 @@ const router = Router();
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
 
-// Per-IP limiter for the public route: 10 orders per minute.
-const hits = new Map<string, number[]>();
-function limited(ip: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < 60_000);
-  recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > 10;
-}
-
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 
 /** Port of supabase/functions/create-order. Prices come from the DB only. */
-router.post('/checkout/orders', async (req, res) => {
-  if (limited(req.ip ?? 'unknown')) {
-    return res.status(429).json({ error: 'Too many requests. Please try again shortly.' });
-  }
-
-  const { customer, items } = req.body ?? {};
-  const addr = customer?.shippingAddress;
-  if (!str(customer?.name) || !str(customer?.email)) {
-    return res.status(400).json({ error: 'Customer name and email are required.' });
-  }
-  if (!str(addr?.line1) || !str(addr?.city)) {
-    return res.status(400).json({ error: 'Incomplete delivery shipping address.' });
-  }
-  if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: 'Order must contain at least one item.' });
-  }
-  for (const it of items) {
-    if (!str(it?.productId) || typeof it.quantity !== 'number' || it.quantity < 1) {
-      return res.status(400).json({ error: 'Invalid product or quantity in line items.' });
+router.post(
+  '/checkout/orders',
+  rateLimit(10, 60_000),
+  wrap(async (req, res) => {
+    const { customer, items } = req.body ?? {};
+    const addr = customer?.shippingAddress;
+    if (!str(customer?.name) || !str(customer?.email)) {
+      return res.status(400).json({ error: 'Customer name and email are required.' });
     }
-  }
+    if (!str(addr?.line1) || !str(addr?.city)) {
+      return res.status(400).json({ error: 'Incomplete delivery shipping address.' });
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Order must contain at least one item.' });
+    }
+    for (const it of items) {
+      if (!str(it?.productId) || typeof it.quantity !== 'number' || it.quantity < 1) {
+        return res.status(400).json({ error: 'Invalid product or quantity in line items.' });
+      }
+    }
 
-  try {
     const { data: result, error: dbError } = await supabase.rpc('create_order_atomic', {
       p_customer: {
         name: str(customer.name),
@@ -97,10 +86,7 @@ router.post('/checkout/orders', async (req, res) => {
       keyId: RAZORPAY_KEY_ID,
       customer: { name: customer.name, email: customer.email, phone: customer.phone },
     });
-  } catch (err) {
-    console.error('create order error:', err instanceof Error ? err.message : err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  })
+);
 
 export default router;

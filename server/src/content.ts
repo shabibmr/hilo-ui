@@ -111,12 +111,17 @@ export const BASE_HOMEPAGE_CONTENT: HomepageContent = {
     { id: 'kc-5', name: 'Bee Needle Minder', description: 'Bespoke enamel magnet accessory', icon: 'Smile', image: { url: '/images/kit-contents/minder.jpg', altText: 'Needle Minder' } },
     { id: 'kc-6', name: 'Guidebook', description: 'Full-color printed booklet', icon: 'Book', image: { url: '/images/kit-contents/guide.jpg', altText: 'Guidebook' } },
     { id: 'kc-7', name: 'QR Video Lessons', description: 'Slow-motion video stitch tutorials', icon: 'QrCode', image: { url: '/images/kit-contents/qr.jpg', altText: 'QR Lessons' } },
+    { id: 'kc-8', name: 'Instruction Card', description: 'Quick-start guide card', icon: 'Layers', image: { url: '/images/kit-contents/card.jpg', altText: 'Instruction Card' } },
+    { id: 'kc-9', name: 'Travel Folder', description: 'Keep all your materials organized', icon: 'Folder', image: { url: '/images/kit-contents/folder.jpg', altText: 'Travel Folder' } },
   ],
   creativeJourneySteps: [
-    { stepNumber: 1, title: 'Unbox the Ceremony', description: 'Receive your wax-sealed luxury presentation box, rich with natural linen textures and curated threads.', icon: 'Package' },
-    { stepNumber: 2, title: 'Scan the Guided Video', description: 'Follow high-definition, slow-motion technique tutorials mapped directly to your printed pattern.', icon: 'Video' },
-    { stepNumber: 3, title: 'Find Your Quiet Rhythm', description: 'Breathe, slow down, and enjoy meditative tactile progress as colors fill the organic woven linen.', icon: 'Moon' },
-    { stepNumber: 4, title: 'Display Your Artistry', description: 'Mount your completed floral heirloom in its gold-accented beechwood hoop to bring serenity to your home.', icon: 'Sparkles' },
+    { stepNumber: 1, title: 'Choose Your Kit', description: 'Pick a pattern that speaks to your quiet mood.', icon: 'MousePointer' },
+    { stepNumber: 2, title: 'Open Your Box', description: 'Unwrap the signature presentation box and linen.', icon: 'Package' },
+    { stepNumber: 3, title: 'Scan QR Lessons', description: 'Watch slow-motion video guides on your phone.', icon: 'QrCode' },
+    { stepNumber: 4, title: 'Learn Stitches', description: 'Master basic stitches with ease and comfort.', icon: 'Sparkles' },
+    { stepNumber: 5, title: 'Complete Artwork', description: 'Watch your floral piece come alive stitch by stitch.', icon: 'CheckCircle' },
+    { stepNumber: 6, title: 'Frame It', description: 'Tighten the hoop or display in a wooden frame.', icon: 'Image' },
+    { stepNumber: 7, title: 'Share Your Story', description: 'Join our quiet community of handmade creators.', icon: 'Heart' },
   ],
 };
 

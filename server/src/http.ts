@@ -53,9 +53,19 @@ export function createRateLimiter(limit: number, windowMs: number) {
   const hits = new Map<string, number[]>();
   return (ip: string): boolean => {
     const now = Date.now();
-    const recent = (hits.get(ip) ?? []).filter((t) => now - t < windowMs);
+    const existing = hits.get(ip);
+    const recent = existing ? existing.filter((t) => now - t < windowMs) : [];
     recent.push(now);
     hits.set(ip, recent);
+
+    if (hits.size > 1000) {
+      for (const [key, times] of hits.entries()) {
+        if (times.every((t) => now - t >= windowMs)) {
+          hits.delete(key);
+        }
+      }
+    }
+
     return recent.length > limit;
   };
 }

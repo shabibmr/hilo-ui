@@ -34,7 +34,8 @@ export class ApiCommerceRepository implements CommerceRepository {
   }
 
   async getProductByHandle(handle: string): Promise<Product | null> {
-    const res = await fetch(`${apiBase()}/products/${encodeURIComponent(handle)}`);
+    if (!handle || !handle.trim()) return null;
+    const res = await fetch(`${apiBase()}/products/${encodeURIComponent(handle.trim())}`);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`API /products/${handle} failed (${res.status})`);
     return res.json() as Promise<Product>;
@@ -49,7 +50,8 @@ export class ApiCommerceRepository implements CommerceRepository {
   }
 
   async getCollectionByHandle(handle: string): Promise<Collection | null> {
-    const res = await fetch(`${apiBase()}/collections/${encodeURIComponent(handle)}`);
+    if (!handle || !handle.trim()) return null;
+    const res = await fetch(`${apiBase()}/collections/${encodeURIComponent(handle.trim())}`);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`API /collections/${handle} failed (${res.status})`);
     return res.json() as Promise<Collection>;
@@ -149,8 +151,11 @@ export class ApiCommerceRepository implements CommerceRepository {
   }
 
   private async getProductById(productId: string): Promise<Product | null> {
-    const products = await this.getProducts();
-    return products.find((p) => p.id === productId) || null;
+    if (!productId || !productId.trim()) return null;
+    const res = await fetch(`${apiBase()}/products/id/${encodeURIComponent(productId.trim())}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`API /products/id/${productId} failed (${res.status})`);
+    return res.json() as Promise<Product>;
   }
 
   private recalculateCart(cart: Cart): void {
@@ -191,7 +196,14 @@ export class ApiContentRepository implements ContentRepository {
       body: JSON.stringify(input),
     });
     if (!res.ok) {
-      throw new Error(`API /enquiries failed (${res.status})`);
+      const errBody = (await res.json().catch(() => null)) as {
+        error?: string | { message?: string };
+      } | null;
+      const msg =
+        typeof errBody?.error === 'string'
+          ? errBody.error
+          : errBody?.error?.message || `API /enquiries failed (${res.status})`;
+      throw new Error(msg);
     }
   }
 }

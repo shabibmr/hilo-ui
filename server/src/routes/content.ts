@@ -132,7 +132,10 @@ router.post(
 router.get(
   '/content/homepage',
   wrap(async (_req: Request, res: Response) => {
-    const { data } = await supabase.from('site_settings').select('hero').eq('id', 1).maybeSingle();
+    const { data, error } = await supabase.from('site_settings').select('hero').eq('id', 1).maybeSingle();
+    if (error) {
+      console.warn('[hilo-api] Failed to fetch site_settings.hero for homepage content:', error.message);
+    }
     const heroSettings = (data?.hero && typeof data.hero === 'object') ? (data.hero as Record<string, unknown>) : null;
     const content = buildHomepageContent(heroSettings);
     res.setHeader('Cache-Control', 'public, max-age=60');

@@ -13,14 +13,13 @@ export interface CheckoutCustomer {
 
 interface CreateOrderResponse {
   success?: boolean;
-  error?: string;
+  error?: string | { code?: string; message?: string };
   orderId: string;
   razorpayOrderId: string;
   amount: number;
   currency: string;
   keyId: string;
 }
-
 
 interface RazorpayInstance {
   open: () => void;
@@ -85,8 +84,13 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
   });
 
   const order = (await res.json().catch(() => ({}))) as CreateOrderResponse;
+  const rawError = order.error;
+  const errorMessage =
+    typeof rawError === 'string'
+      ? rawError
+      : rawError?.message || 'We could not place your order. Please try again.';
   if (!res.ok || !order.orderId) {
-    throw new Error(order.error || 'We could not place your order. Please try again.');
+    throw new Error(errorMessage);
   }
   if (!order.keyId) {
     throw new Error('Online payments are not enabled yet. Your order was not charged.');
