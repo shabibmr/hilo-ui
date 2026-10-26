@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from '@/lib/api-url';
 import type { Cart } from '@/lib/data/types';
 
 export interface CheckoutCustomer {
@@ -38,8 +39,6 @@ export class PaymentCancelled extends Error {
   }
 }
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
-
 function loadRazorpayScript(): Promise<void> {
   if (window.Razorpay) return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -52,8 +51,8 @@ function loadRazorpayScript(): Promise<void> {
 }
 
 function createOrder(body: unknown): Promise<Response> {
-  if (!API_URL) throw new Error('Checkout is not configured for this environment.');
-  return fetch(`${API_URL}/api/v1/checkout/orders`, {
+  const baseUrl = getApiBaseUrl();
+  return fetch(`${baseUrl}/api/v1/checkout/orders`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
