@@ -22,12 +22,27 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+const siteUrl = (
+  rawSiteUrl
+    ? rawSiteUrl.startsWith("http://") || rawSiteUrl.startsWith("https://")
+      ? rawSiteUrl
+      : `https://${rawSiteUrl}`
+    : "https://hiloarte.com"
+).replace(/\/+$/, "");
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://hiloarte.com"),
+  metadataBase: new URL(siteUrl),
   title: "HILO ARTE — Luxury Embroidery Experiences & DIY Kits",
   description: "Beginner embroidery experiences designed to slow down and create. Handcrafted luxury kits, guided lessons, and slow-living art in India.",
   keywords: ["Embroidery Kits", "Luxury DIY Kits", "Beginner Embroidery", "Handcrafted India", "Slow Living", "HILO ARTE"],
+  alternates: {
+    canonical: siteUrl,
+  },
   openGraph: {
+    title: "HILO ARTE — Luxury Embroidery Experiences & DIY Kits",
+    description: "Beginner embroidery experiences designed to slow down and create. Handcrafted luxury kits, guided lessons, and slow-living art in India.",
+    url: siteUrl,
     siteName: "HILO ARTE",
     images: [{ url: "/images/hero/hero-fairy-moon.jpg" }],
   },
