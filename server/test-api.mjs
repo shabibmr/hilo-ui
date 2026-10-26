@@ -79,6 +79,16 @@ const db = {
       title: 'Draft Collection',
       published: false,
     },
+    {
+      id: 'c-3',
+      handle: 'no-image-collection',
+      title: 'No Image Collection',
+      description: 'Collection without image.',
+      image: null,
+      featured_product_handles: [],
+      sort_order: 2,
+      published: true,
+    },
   ],
   site_settings: [
     {
@@ -236,15 +246,27 @@ function buildTestApp() {
   }
 
   function mapCollection(row) {
-    const image = row.image || null;
+    let image = null;
+    if (row.image && typeof row.image === 'object') {
+      const url = str(row.image.url).trim();
+      if (url) {
+        image = {
+          url,
+          altText: str(row.image.altText, str(row.title)),
+        };
+      }
+    } else if (typeof row.image_url === 'string' && row.image_url.trim()) {
+      image = {
+        url: row.image_url.trim(),
+        altText: str(row.title),
+      };
+    }
     return {
       id: str(row.id),
       handle: str(row.handle),
       title: str(row.title),
       description: str(row.description),
-      image: image?.url
-        ? image
-        : { url: '/images/hero/hero-fairy-moon.jpg', altText: str(row.title) },
+      image,
       featuredProductHandles: list(row.featured_product_handles),
     };
   }
@@ -563,7 +585,21 @@ async function runTests() {
     assert.strictEqual(founderContent.headline, 'Meet the hands behind HILO ARTE');
     console.log('✓ PASS');
 
-    console.log('\n======================================================');
+        console.log('[TEST 11] Collection without image returns image: null...');
+    const resNoImg = await fetch(`${baseUrl}/collections/no-image-collection`);
+    assert.strictEqual(resNoImg.status, 200);
+    const noImgCol = await resNoImg.json();
+    assert.strictEqual(noImgCol.image, null);
+
+    const resAllCols = await fetch(`${baseUrl}/collections`);
+    assert.strictEqual(resAllCols.status, 200);
+    const allCols = await resAllCols.json();
+    const foundNoImg = allCols.find((c) => c.handle === 'no-image-collection');
+    assert.ok(foundNoImg);
+    assert.strictEqual(foundNoImg.image, null);
+    console.log('✓ PASS');
+
+console.log('\n======================================================');
     console.log('ALL BACKEND READ API CONTRACT TESTS PASSED');
     console.log('======================================================');
   } finally {

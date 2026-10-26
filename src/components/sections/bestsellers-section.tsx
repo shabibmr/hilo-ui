@@ -27,7 +27,7 @@ export const BestSellersSection: React.FC<BestSellersSectionProps> = ({ products
         </div>
 
         <div className="text-center pt-4">
-          <CtaButton href="/collections/diy-kits" variant="solid-wine" size="lg">
+          <CtaButton href="/collections/view/?handle=diy-kits" variant="solid-wine" size="lg">
             View All DIY Kits
           </CtaButton>
         </div>

@@ -73,7 +73,7 @@ export default function CheckoutPage() {
                 <p className="font-accent italic text-sm text-wine/60 max-w-sm">
                   Add a handcrafted kit to your basket before checking out.
                 </p>
-                <CtaButton href="/collections/diy-kits" size="sm">
+                <CtaButton href="/collections/view/?handle=diy-kits" size="sm">
                   Explore DIY Kits
                 </CtaButton>
               </div>

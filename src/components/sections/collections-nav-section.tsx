@@ -47,9 +47,9 @@ export const CollectionsNavSection: React.FC<CollectionsNavSectionProps> = ({ it
                 ? '/workshops'
                 : item.handle === 'customisation'
                   ? '/customisation'
-                  : `/collections/${item.handle}`;
+                  : `/collections/view/?handle=${encodeURIComponent(item.handle)}`;
 
-            const imageSrc = collectionImages[item.handle] || '/images/collections/diy-kits.jpg';
+            const imageSrc = collectionImages[item.handle] ?? null;
             const blurb = collectionBlurbs[item.handle] || '';
             const isWide = idx === 0;
 
@@ -63,13 +63,44 @@ export const CollectionsNavSection: React.FC<CollectionsNavSectionProps> = ({ it
               >
                 <DoubleBezel variant="dark" className="h-full min-h-[280px]">
                   <div className="relative min-h-[280px] flex flex-col justify-end p-5">
-                    <Image
-                      src={imageSrc}
-                      alt=""
-                      fill
-                      className="object-cover opacity-55 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:opacity-70 group-hover:scale-105"
-                      sizes="(max-width: 768px) 70vw, 20vw"
-                    />
+                    {imageSrc ? (
+                      <Image
+                        src={imageSrc}
+                        alt=""
+                        fill
+                        className="object-cover opacity-55 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:opacity-70 group-hover:scale-105"
+                        sizes="(max-width: 768px) 70vw, 20vw"
+                      />
+                    ) : (
+                      <div
+                        className="absolute inset-0 bg-gradient-to-br from-wine-ink via-deep-wine to-wine opacity-90 flex items-center justify-center overflow-hidden"
+                        aria-hidden="true"
+                      >
+                        <svg
+                          className="absolute inset-0 w-full h-full opacity-10"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                        >
+                          <defs>
+                            <pattern id={`stitch-${item.handle}`} width="16" height="16" patternUnits="userSpaceOnUse">
+                              <path
+                                d="M 0 8 L 16 8 M 8 0 L 8 16"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="0.5"
+                                strokeDasharray="2 2"
+                                className="text-gold"
+                              />
+                            </pattern>
+                          </defs>
+                          <rect width="100%" height="100%" fill={`url(#stitch-${item.handle})`} />
+                        </svg>
+                        <div className="w-14 h-14 rounded-full border border-gold/25 flex items-center justify-center text-gold/40">
+                          <span className="font-display text-xl font-light">{item.title.charAt(0)}</span>
+                        </div>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-wine-ink/90 via-wine-ink/30 to-transparent" />
 
                     <div className="relative z-10 text-cream">
