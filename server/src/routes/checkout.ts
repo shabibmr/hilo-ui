@@ -4,9 +4,6 @@ import { supabase } from '../supabase.js';
 
 const router = Router();
 
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
-
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 
 /** Port of supabase/functions/create-order. Prices come from the DB only. */
@@ -31,6 +28,12 @@ router.post(
       }
     }
 
+    const razorpayKeyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+    const razorpayKeySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      return res.status(503).json({ error: 'Online payments are currently unavailable.' });
+    }
+
     const { data: result, error: dbError } = await supabase.rpc('create_order_atomic', {
       p_customer: {
         name: str(customer.name),
@@ -48,14 +51,14 @@ router.post(
 
     const orderId: string = result.order_id;
     const amount = Math.round(Number(result.subtotal) * 100);
-    let razorpayOrderId = `order_${orderId.replace(/-/g, '').slice(0, 16)}`;
+    let razorpayOrderId: string;
 
-    if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
+    try {
       const rzp = await fetch('https://api.razorpay.com/v1/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Basic ${Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString('base64')}`,
         },
         body: JSON.stringify({
           amount,
@@ -71,8 +74,11 @@ router.post(
         return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
       }
       razorpayOrderId = ((await rzp.json()) as { id: string }).id;
-    } else {
-      console.warn('RAZORPAY_KEY_ID not set; using placeholder order id.');
+    } catch (err) {
+      console.error('Razorpay order creation failed:', err);
+      // Release the reserved stock.
+      await supabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
+      return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
     }
 
     await supabase.from('orders').update({ razorpay_order_id: razorpayOrderId }).eq('id', orderId);
@@ -83,7 +89,7 @@ router.post(
       razorpayOrderId,
       amount,
       currency: 'INR',
-      keyId: RAZORPAY_KEY_ID,
+      keyId: razorpayKeyId,
       customer: { name: customer.name, email: customer.email, phone: customer.phone },
     });
   })

@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Container } from '@/components/common/container';
 import { CtaButton } from '@/components/common/cta-button';
-import { placeOrder, type CheckoutCustomer } from '@/lib/checkout/place-order';
+import { placeOrder, formatCustomerName, type CheckoutCustomer } from '@/lib/checkout/place-order';
 import { ShieldCheck, CreditCard, Smartphone, ShoppingBag } from 'lucide-react';
 
 export default function CheckoutPage() {
@@ -31,9 +31,13 @@ export default function CheckoutPage() {
 
     const form = new FormData(e.currentTarget);
     const field = (name: string) => String(form.get(name) ?? '').trim();
+    const firstName = field('firstName');
+    const lastName = field('lastName');
+    const fullName = formatCustomerName(firstName, lastName);
     const customer: CheckoutCustomer = {
-      firstName: field('firstName'),
-      lastName: field('lastName'),
+      firstName,
+      lastName,
+      fullName,
       email: field('email'),
       phone: field('phone'),
       street: field('street'),
@@ -73,7 +77,7 @@ export default function CheckoutPage() {
                 <p className="font-accent italic text-sm text-wine/60 max-w-sm">
                   Add a handcrafted kit to your basket before checking out.
                 </p>
-                <CtaButton href="/collections/diy-kits" size="sm">
+                <CtaButton href="/collections/view/?handle=diy-kits" size="sm">
                   Explore DIY Kits
                 </CtaButton>
               </div>

@@ -73,7 +73,7 @@ export default function WhatsInsidePage() {
               </div>
 
               <div className="text-center">
-                <CtaButton href="/collections/diy-kits" size="lg">
+                <CtaButton href="/collections/view/?handle=diy-kits" size="lg">
                   Start Your First Stitch
                 </CtaButton>
               </div>

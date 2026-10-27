@@ -80,8 +80,7 @@ export class ApiCommerceRepository implements CommerceRepository {
     return res.json() as Promise<Collection>;
   }
 
-  async createCart(): Promise<Cart> {
-    const id = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  async createCart(id = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`): Promise<Cart> {
     const newCart: Cart = {
       id,
       lines: [],

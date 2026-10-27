@@ -61,7 +61,7 @@ export const CartDrawer: React.FC = () => {
                 <p className="font-accent italic text-sm text-wine/60">
                   Begin your slow creative journey with one of our handcrafted kits.
                 </p>
-                <CtaButton href="/collections/diy-kits" onClick={closeCart} size="sm">
+                <CtaButton href="/collections/view/?handle=diy-kits" onClick={closeCart} size="sm">
                   Explore DIY Kits
                 </CtaButton>
               </div>

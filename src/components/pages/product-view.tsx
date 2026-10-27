@@ -37,7 +37,7 @@ export function ProductView({ handle }: { handle: string }) {
               <p className="text-sm text-wine/70 font-light">
                 It may have been unpublished or the link may be out of date.
               </p>
-              <Link href="/collections/all" className="inline-block text-gold underline">
+              <Link href="/collections/view/?handle=all" className="inline-block text-gold underline">
                 Browse all kits
               </Link>
             </div>
