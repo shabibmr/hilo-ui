@@ -16,7 +16,13 @@ export interface CommerceRepository {
    * this for cart-merge/associate-on-load rather than a no-op.
    */
   hydrateCart(cart: Cart): Promise<void>;
-  addCartLine(cartId: string, productId: string, variantId: string, quantity: number): Promise<Cart>;
+  addCartLine(
+    cartId: string,
+    productId: string,
+    variantId: string,
+    quantity: number,
+    existingCart?: Cart | null
+  ): Promise<Cart>;
   updateCartLine(cartId: string, lineId: string, quantity: number): Promise<Cart>;
   removeCartLine(cartId: string, lineId: string): Promise<Cart>;
 }
