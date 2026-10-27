@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { rateLimit, wrap } from '../http.js';
+import { rateLimit, sendError, wrap } from '../http.js';
 import { supabase } from '../supabase.js';
 
 const router = Router();
@@ -31,7 +31,8 @@ router.post(
     const razorpayKeyId = (process.env.RAZORPAY_KEY_ID || '').trim();
     const razorpayKeySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
     if (!razorpayKeyId || !razorpayKeySecret) {
-      return res.status(503).json({ error: 'Online payments are currently unavailable.' });
+      sendError(res, 503, 'PAYMENT_UNAVAILABLE', 'Online payments are currently unavailable.');
+      return;
     }
 
     const { data: result, error: dbError } = await supabase.rpc('create_order_atomic', {
