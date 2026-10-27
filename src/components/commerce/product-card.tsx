@@ -7,6 +7,7 @@ import { Product } from '@/lib/data/types';
 import { useCartStore } from '@/lib/cart/cart-store';
 import { ShoppingBag, Clock } from 'lucide-react';
 import { DoubleBezel } from '../common/double-bezel';
+import { productHref } from '@/lib/links';
 
 interface ProductCardProps {
   product: Product;
@@ -20,7 +21,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     <div className="group relative flex flex-col h-full transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1.5">
       <DoubleBezel className="h-full shadow-wine-sm" coreClassName="flex flex-col h-full bg-white">
         <Link
-          href={`/products/view/?handle=${encodeURIComponent(product.handle)}`}
+          href={productHref(product.handle)}
           className="block relative aspect-[4/5] overflow-hidden bg-wine/[0.04]"
         >
           {product.images[0]?.url ? (
@@ -50,7 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <div className="p-5 flex flex-col flex-1 justify-between space-y-4">
           <div>
             <Link
-              href={`/products/view/?handle=${encodeURIComponent(product.handle)}`}
+              href={productHref(product.handle)}
               className="block group-hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               <h3 className="font-display text-xl font-medium text-wine leading-tight">

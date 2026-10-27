@@ -96,17 +96,17 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
       ? rawError
       : rawError?.message ||
         (res.status === 503
-          ? 'Online payments are currently unavailable.'
+          ? 'Online payments are currently unavailable. Your order was not placed and no payment was charged.'
           : 'We could not place your order. Please try again.');
 
   if (!res.ok || !order.orderId) {
     if (res.status === 503 || errorMessage.includes('Online payments are currently unavailable')) {
-      throw new Error('Online payments are currently unavailable.');
+      throw new Error('Online payments are currently unavailable. Your order was not placed and no payment was charged.');
     }
     throw new Error(errorMessage);
   }
   if (!order.keyId) {
-    throw new Error('Online payments are currently unavailable.');
+    throw new Error('Online payments are currently unavailable. Your order was not placed and no payment was charged.');
   }
 
   await loadRazorpayScript();

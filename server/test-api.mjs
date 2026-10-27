@@ -202,6 +202,7 @@ function createMockSupabase() {
           customer_name: args?.p_customer?.name,
           customer_email: args?.p_customer?.email,
           status: 'pending',
+          items: items.map((it) => ({ ...it })),
           created_at: new Date().toISOString(),
         };
         db.orders.push(orderRow);
@@ -212,7 +213,17 @@ function createMockSupabase() {
       }
       if (fn === 'set_order_status') {
         const ord = db.orders.find((o) => o.id === args?.p_order);
-        if (ord) ord.status = args?.p_status;
+        if (ord) {
+          ord.status = args?.p_status;
+          if (args?.p_status === 'cancelled' && Array.isArray(ord.items)) {
+            for (const it of ord.items) {
+              const prod = db.products.find((p) => p.id === it.product_id);
+              if (prod) {
+                prod.stock += it.quantity;
+              }
+            }
+          }
+        }
         return Promise.resolve({ data: null, error: null });
       }
       return Promise.resolve({ data: null, error: new Error(`Unknown RPC ${fn}`) });
@@ -506,7 +517,7 @@ function buildTestApp() {
     const razorpayKeyId = (process.env.RAZORPAY_KEY_ID || '').trim();
     const razorpayKeySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
     if (!razorpayKeyId || !razorpayKeySecret) {
-      return sendError(res, 503, 'PAYMENT_UNAVAILABLE', 'Online payments are currently unavailable.');
+      return res.status(503).json({ error: 'Online payments are currently unavailable. Your order was not placed and no payment was charged.' });
     }
 
     const { data: result, error: dbError } = await mockSupabase.rpc('create_order_atomic', {
@@ -734,8 +745,11 @@ async function runTests() {
 
     assert.strictEqual(resCheckout.status, 503);
     const checkoutBody = await resCheckout.json();
-    assert.strictEqual(checkoutBody.error.code, 'PAYMENT_UNAVAILABLE');
-    assert.strictEqual(checkoutBody.error.message, 'Online payments are currently unavailable.');
+    assert.strictEqual(
+      checkoutBody.error,
+      'Online payments are currently unavailable. Your order was not placed and no payment was charged.'
+    );
+
 
     // Assert that no stock was deducted/reserved and no pending order was created
     const currentStock = db.products.find((p) => p.id === 'p-1').stock;
@@ -761,6 +775,62 @@ async function runTests() {
     console.log('✓ PASS');
 
     console.log('\n======================================================');
+    console.log('[TEST 13] Razorpay downstream failure returns 502, cancels order, and releases reserved stock...');
+    const originalFetch = globalThis.fetch;
+    process.env.RAZORPAY_KEY_ID = 'rzp_test_mock_key';
+    process.env.RAZORPAY_KEY_SECRET = 'rzp_test_mock_secret';
+
+    const stockBefore = db.products.find((p) => p.id === 'p-1').stock;
+
+    globalThis.fetch = async (url, options) => {
+      if (typeof url === 'string' && url.includes('api.razorpay.com')) {
+        return new Response(JSON.stringify({ error: { code: 'BAD_REQUEST_ERROR', description: 'Simulated downstream failure' } }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return originalFetch(url, options);
+    };
+
+    try {
+      const resDownstream = await fetch(`${baseUrl}/checkout/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer: {
+            name: 'Ada Lovelace',
+            email: 'ada@example.com',
+            phone: '+91 99999 99999',
+            shippingAddress: {
+              fullName: 'Ada Lovelace',
+              line1: '123 Craft Lane',
+              city: 'Mumbai',
+              state: 'Maharashtra',
+              postalCode: '400050',
+              country: 'IN',
+            },
+          },
+          items: [{ productId: 'p-1', quantity: 2 }],
+        }),
+      });
+
+      assert.strictEqual(resDownstream.status, 502);
+      const downstreamBody = await resDownstream.json();
+      assert.strictEqual(downstreamBody.error, 'Failed to initiate gateway payment session.');
+
+      const cancelledOrder = db.orders[db.orders.length - 1];
+      assert.ok(cancelledOrder);
+      assert.strictEqual(cancelledOrder.status, 'cancelled');
+
+      const stockAfter = db.products.find((p) => p.id === 'p-1').stock;
+      assert.strictEqual(stockAfter, stockBefore);
+    } finally {
+      globalThis.fetch = originalFetch;
+      delete process.env.RAZORPAY_KEY_ID;
+      delete process.env.RAZORPAY_KEY_SECRET;
+    }
+    console.log('✓ PASS');
+
     console.log('ALL BACKEND READ API CONTRACT TESTS PASSED');
     console.log('======================================================');
   } finally {

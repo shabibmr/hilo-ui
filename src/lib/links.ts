@@ -6,3 +6,7 @@
 export function collectionHref(handle: string): string {
   return `/collections/view/?handle=${encodeURIComponent(handle)}`;
 }
+
+export function productHref(handle: string): string {
+  return `/products/view/?handle=${encodeURIComponent(handle)}`;
+}

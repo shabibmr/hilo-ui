@@ -70,24 +70,6 @@ export const useCartStore = create<CartState>()(
             cart
           );
 
-          // Defensive check: ensure caller's existing cart lines are never dropped
-          if (cart?.lines && cart.lines.length > 0) {
-            const missingLines = cart.lines.filter(
-              (prev) => !updatedCart.lines.some((curr) => curr.id === prev.id)
-            );
-            if (missingLines.length > 0) {
-              updatedCart.lines = [...missingLines, ...updatedCart.lines];
-              updatedCart.totalQuantity = updatedCart.lines.reduce(
-                (sum, line) => sum + line.quantity,
-                0
-              );
-              updatedCart.subtotal = updatedCart.lines.reduce(
-                (sum, line) => sum + line.variant.price * line.quantity,
-                0
-              );
-            }
-          }
-
           set({ cart: updatedCart, isOpen: true, isLoading: false });
         } catch (error) {
           console.error('Error adding item to cart:', error);

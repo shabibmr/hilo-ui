@@ -69,9 +69,9 @@ export const BASE_HOMEPAGE_CONTENT: HomepageContent = {
     headline: 'Stitch beauty into your quiet moments.',
     subheadline: 'Beginner embroidery experiences designed to slow down and create.',
     primaryCtaText: 'Start Your First Stitch',
-    primaryCtaLink: '/collections/diy-kits',
+    primaryCtaLink: '/collections/view/?handle=diy-kits',
     secondaryCtaText: 'Explore Gift Experiences',
-    secondaryCtaLink: '/collections/gift-experiences',
+    secondaryCtaLink: '/collections/view/?handle=gift-experiences',
     backgroundImage: { url: '/images/hero/hero-fairy-moon.jpg', altText: 'Fairy stitching on crescent moon atmosphere' },
   },
   collectionsNav: [
