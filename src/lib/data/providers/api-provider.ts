@@ -98,20 +98,62 @@ export class ApiCommerceRepository implements CommerceRepository {
   }
 
   async hydrateCart(cart: Cart): Promise<void> {
-    if (!apiCarts.has(cart.id)) {
-      apiCarts.set(cart.id, cart);
-    }
+    if (!cart?.id) return;
+    const existing = apiCarts.get(cart.id);
+    const lines =
+      Array.isArray(cart.lines) && cart.lines.length > 0
+        ? cart.lines.map((l) => ({ ...l }))
+        : existing?.lines
+        ? [...existing.lines]
+        : [];
+    const hydrated: Cart = {
+      id: cart.id,
+      lines,
+      currencyCode: cart.currencyCode || existing?.currencyCode || 'INR',
+      subtotal: cart.subtotal ?? existing?.subtotal ?? 0,
+      totalQuantity: cart.totalQuantity ?? existing?.totalQuantity ?? 0,
+    };
+    this.recalculateCart(hydrated);
+    apiCarts.set(cart.id, hydrated);
   }
 
   async addCartLine(
     cartId: string,
     productId: string,
     variantId: string,
-    quantity: number
+    quantity: number,
+    existingCart?: Cart | null
   ): Promise<Cart> {
-    let cart = apiCarts.get(cartId);
-    if (!cart) {
+    let cart: Cart;
+    if (!cartId) {
       cart = await this.createCart();
+    } else {
+      let found = apiCarts.get(cartId);
+      if (!found) {
+        const existingLines =
+          existingCart && existingCart.id === cartId && Array.isArray(existingCart.lines)
+            ? existingCart.lines.map((l) => ({ ...l }))
+            : [];
+        found = {
+          id: cartId,
+          lines: existingLines,
+          subtotal: existingCart?.subtotal ?? 0,
+          currencyCode: existingCart?.currencyCode || 'INR',
+          totalQuantity: existingCart?.totalQuantity ?? 0,
+        };
+        this.recalculateCart(found);
+        apiCarts.set(cartId, found);
+      } else if (
+        found.lines.length === 0 &&
+        existingCart &&
+        existingCart.id === cartId &&
+        Array.isArray(existingCart.lines) &&
+        existingCart.lines.length > 0
+      ) {
+        found.lines = existingCart.lines.map((l) => ({ ...l }));
+        this.recalculateCart(found);
+      }
+      cart = found;
     }
 
     const product = await this.getProductById(productId);
