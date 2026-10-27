@@ -37,19 +37,22 @@ Two lanes run at the same time. Lane 1 does not wait on the server. Lane 2 start
 - [x] B2. After B1. `server/src/routes/catalog.ts` implements the five catalog routes in the plan. Published rows only. `GET /collections/:handle` returns a `Collection` with no `products` array. Check with an HTTP client: a published product is returned, a draft is not, and best sellers match `is_best_seller`.
 - [x] B3. After B1. `server/src/routes/content.ts` implements `GET /settings` and `POST /enquiries`. Missing settings row is 404. Enquiry success is 204. Check both with an HTTP client.
 - [x] A1. After B2 and B3 are specified. `src/lib/data/providers/api-provider.ts` calls `${NEXT_PUBLIC_API_URL}/api/v1` for the seven methods. A non-OK settings response throws. Cart methods use an in-memory `Map`. Homepage and founder content stay on the mock modules.
-- [x] A2. After A1. `index.ts` accepts `NEXT_PUBLIC_DATA_PROVIDER=api`. It is opt-in. Document `NEXT_PUBLIC_API_URL` in `.env.local.example`. Do not make `api` the production default in this row.
+- [x] A2. (Superseded by M3.) The provider switch no longer exists; the API is the only data path. `NEXT_PUBLIC_API_URL` is documented in `.env.local.example`.
+
+## Accepted additions on the API
+`server/` also carries `/admin`, the Razorpay webhook port, `/openapi.json`, `GET /products/id/:id` (used by the cart), a per-IP rate limit, security headers and pagination headers. They are outside B0–B3 and covered by ADR 0001 and `docs/backend/API_MIGRATION_PLAN.md`.
 
 ## Close-out
 
 - [x] G1. `npm run lint` passes.
 - [x] G2. `npm run build` passes.
 - [~] G3. Browser, provider `mock`, desktop and 375px: `/`, `/collections/diy-kits/`, `/collections/view/?handle=diy-kits`, `/products/blooming-roses/`, `/products/view/?handle=blooming-roses`, cart open and close, checkout through `?preview=1`, contact page. Tagline, Accessories badge, and six philosophy cards plus the ritual cell are visible on `/`.
-- [ ] G4. Browser, provider `api`, with the server running and a real service-role key: the same routes show database rows, a draft product is hidden, and a contact insert lands in `enquiries`. An unreachable `NEXT_PUBLIC_API_URL` shows `DataErrorState` on the hero, promo bar, footer, and contact address, with a working retry. After this pass, set the production default provider to `api`.
+- [ ] G4. Browser, against the API (the only path since M3), with the server running and a real service-role key: the same routes show database rows, a draft product is hidden, and a contact insert lands in `enquiries`. An unreachable `NEXT_PUBLIC_API_URL` shows `DataErrorState` on the hero, promo bar, footer, and contact address, with a working retry. (The old "set the default provider to api" step is obsolete after M3.)
 
 ## API-only (ADR 0001): remove mock and direct Supabase
 Order matters. The live API pass (G4) and backend Stage 2 (API checkout) come first. See `docs/backend/API_MIGRATION_PLAN.md` Stage 5.
 - [x] M0. Checkout runs the real flow for every provider except `mock` (it used to run only for `supabase`, so `api` builds showed the mock confirmation).
-- [x] M1. Serve homepage and founder content from the API (settings or a content endpoint). `ApiContentRepository` returns no fixtures.
+- [x] M1. Serve homepage and founder content from the API (settings or a content endpoint). `ApiContentRepository` returns no fixtures. Content is held as plain content in `server/src/content.ts` (ADR 0001), not in database rows.
 - [x] M2. Checkout: `placeOrder` posts to `/api/v1/checkout/orders` only. Delete the Edge Function branch, `NEXT_PUBLIC_CHECKOUT_MODE`, and the Supabase env vars.
 - [x] M3. Delete `src/lib/data/mock/`, `mock-provider.ts`, `supabase-provider.ts`, `src/lib/supabase.ts`, and the `@supabase/supabase-js` dependency. `providers/index.ts` builds only the API repositories and throws without `NEXT_PUBLIC_API_URL`.
 - [x] M4. Delete the `?preview=1` demo branch in `checkout/page.tsx` and the "mock checkout" notice on the confirmation page.

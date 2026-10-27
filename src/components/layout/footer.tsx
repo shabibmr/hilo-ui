@@ -104,7 +104,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
-                  href="/collections/all"
+                  href="/collections/view/?handle=all"
                   className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 >
                   All Products

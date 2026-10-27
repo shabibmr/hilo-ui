@@ -7,6 +7,7 @@
  * - Error envelope { error: { code, message, details? } }
  * - Enquiry validation → 422; success → 204
  * - Product by id at /products/id/:id
+ * - Checkout payment readiness verification
  */
 
 import assert from 'node:assert/strict';
@@ -114,6 +115,7 @@ const db = {
     },
   ],
   enquiries: [],
+  orders: [],
 };
 
 function createMockSupabase() {
@@ -160,6 +162,9 @@ function createMockSupabase() {
           }
           return Promise.resolve({ data: rows, error: null });
         },
+        update(updates) {
+          return builder;
+        },
         then(resolve) {
           let result = [...data];
           for (const f of filters) {
@@ -181,6 +186,36 @@ function createMockSupabase() {
         },
       };
       return builder;
+    },
+    rpc(fn, args) {
+      if (fn === 'create_order_atomic') {
+        const items = args?.p_items || [];
+        for (const it of items) {
+          const prod = db.products.find((p) => p.id === it.product_id);
+          if (prod) {
+            prod.stock -= it.quantity;
+          }
+        }
+        const orderId = 'order-' + randomUUID();
+        const orderRow = {
+          id: orderId,
+          customer_name: args?.p_customer?.name,
+          customer_email: args?.p_customer?.email,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        };
+        db.orders.push(orderRow);
+        return Promise.resolve({
+          data: { order_id: orderId, subtotal: 1899 },
+          error: null,
+        });
+      }
+      if (fn === 'set_order_status') {
+        const ord = db.orders.find((o) => o.id === args?.p_order);
+        if (ord) ord.status = args?.p_status;
+        return Promise.resolve({ data: null, error: null });
+      }
+      return Promise.resolve({ data: null, error: new Error(`Unknown RPC ${fn}`) });
     },
   };
 }
@@ -448,6 +483,88 @@ function buildTestApp() {
     res.status(204).send();
   });
 
+  v1.post('/checkout/orders', async (req, res) => {
+    const { customer, items } = req.body ?? {};
+    const addr = customer?.shippingAddress;
+    const strTrim = (v) => (typeof v === 'string' ? v.trim() : '');
+
+    if (!strTrim(customer?.name) || !strTrim(customer?.email)) {
+      return res.status(400).json({ error: 'Customer name and email are required.' });
+    }
+    if (!strTrim(addr?.line1) || !strTrim(addr?.city)) {
+      return res.status(400).json({ error: 'Incomplete delivery shipping address.' });
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Order must contain at least one item.' });
+    }
+    for (const it of items) {
+      if (!strTrim(it?.productId) || typeof it.quantity !== 'number' || it.quantity < 1) {
+        return res.status(400).json({ error: 'Invalid product or quantity in line items.' });
+      }
+    }
+
+    const razorpayKeyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+    const razorpayKeySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      return sendError(res, 503, 'PAYMENT_UNAVAILABLE', 'Online payments are currently unavailable.');
+    }
+
+    const { data: result, error: dbError } = await mockSupabase.rpc('create_order_atomic', {
+      p_customer: {
+        name: strTrim(customer.name),
+        email: strTrim(customer.email),
+        phone: strTrim(customer.phone) || null,
+        shipping_address: addr,
+      },
+      p_items: items.map((it) => ({
+        product_id: it.productId,
+        quantity: Math.floor(it.quantity),
+      })),
+      p_razorpay_order_id: null,
+    });
+    if (dbError) return res.status(400).json({ error: dbError.message || 'Unable to place order.' });
+
+    const orderId = result.order_id;
+    const amount = Math.round(Number(result.subtotal) * 100);
+    let razorpayOrderId;
+
+    try {
+      const rzp = await fetch('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString('base64')}`,
+        },
+        body: JSON.stringify({
+          amount,
+          currency: 'INR',
+          receipt: `rcpt_${orderId.slice(0, 10)}`,
+          notes: { hilo_order_id: orderId, customer_email: strTrim(customer.email) },
+        }),
+      });
+      if (!rzp.ok) {
+        await mockSupabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
+        return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
+      }
+      razorpayOrderId = (await rzp.json()).id;
+    } catch {
+      await mockSupabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
+      return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
+    }
+
+    await mockSupabase.from('orders').update({ razorpay_order_id: razorpayOrderId });
+
+    res.json({
+      success: true,
+      orderId,
+      razorpayOrderId,
+      amount,
+      currency: 'INR',
+      keyId: razorpayKeyId,
+      customer: { name: customer.name, email: customer.email, phone: customer.phone },
+    });
+  });
+
   v1.get('/openapi.json', (_req, res) => {
     res.json({ openapi: '3.0.3', info: { title: 'test', version: '1.0.0' } });
   });
@@ -585,7 +702,51 @@ async function runTests() {
     assert.strictEqual(founderContent.headline, 'Meet the hands behind HILO ARTE');
     console.log('✓ PASS');
 
-        console.log('[TEST 11] Collection without image returns image: null...');
+    console.log('[TEST 11] Checkout when RAZORPAY_KEY_ID is unset returns 503 and reserves no stock...');
+    const originalKeyId = process.env.RAZORPAY_KEY_ID;
+    const originalKeySecret = process.env.RAZORPAY_KEY_SECRET;
+    delete process.env.RAZORPAY_KEY_ID;
+    delete process.env.RAZORPAY_KEY_SECRET;
+
+    const initialStock = db.products.find((p) => p.id === 'p-1').stock;
+    const initialOrdersCount = db.orders.length;
+
+    const resCheckout = await fetch(`${baseUrl}/checkout/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer: {
+          name: 'Ada Lovelace',
+          email: 'ada@example.com',
+          phone: '+91 99999 99999',
+          shippingAddress: {
+            fullName: 'Ada Lovelace',
+            line1: '123 Craft Lane',
+            city: 'Mumbai',
+            state: 'Maharashtra',
+            postalCode: '400050',
+            country: 'IN',
+          },
+        },
+        items: [{ productId: 'p-1', quantity: 2 }],
+      }),
+    });
+
+    assert.strictEqual(resCheckout.status, 503);
+    const checkoutBody = await resCheckout.json();
+    assert.strictEqual(checkoutBody.error.code, 'PAYMENT_UNAVAILABLE');
+    assert.strictEqual(checkoutBody.error.message, 'Online payments are currently unavailable.');
+
+    // Assert that no stock was deducted/reserved and no pending order was created
+    const currentStock = db.products.find((p) => p.id === 'p-1').stock;
+    assert.strictEqual(currentStock, initialStock);
+    assert.strictEqual(db.orders.length, initialOrdersCount);
+
+    if (originalKeyId !== undefined) process.env.RAZORPAY_KEY_ID = originalKeyId;
+    if (originalKeySecret !== undefined) process.env.RAZORPAY_KEY_SECRET = originalKeySecret;
+    console.log('✓ PASS');
+
+    console.log('[TEST 12] Collection without image returns image: null...');
     const resNoImg = await fetch(`${baseUrl}/collections/no-image-collection`);
     assert.strictEqual(resNoImg.status, 200);
     const noImgCol = await resNoImg.json();
@@ -599,7 +760,7 @@ async function runTests() {
     assert.strictEqual(foundNoImg.image, null);
     console.log('✓ PASS');
 
-console.log('\n======================================================');
+    console.log('\n======================================================');
     console.log('ALL BACKEND READ API CONTRACT TESTS PASSED');
     console.log('======================================================');
   } finally {
