@@ -51,13 +51,31 @@ function mapProduct(row: DbRow) {
 }
 
 function mapCollection(row: DbRow) {
-  const image = row.image as ImageAsset | null;
+  let image: ImageAsset | null = null;
+  if (row.image && typeof row.image === 'object') {
+    const rawImg = row.image as Record<string, unknown>;
+    const url = str(rawImg.url).trim();
+    if (url) {
+      image = {
+        url,
+        altText: str(rawImg.altText, str(row.title)),
+        ...(typeof rawImg.width === 'number' ? { width: rawImg.width } : {}),
+        ...(typeof rawImg.height === 'number' ? { height: rawImg.height } : {}),
+      };
+    }
+  } else if (typeof row.image_url === 'string' && row.image_url.trim()) {
+    image = {
+      url: row.image_url.trim(),
+      altText: str(row.title),
+    };
+  }
+
   return {
     id: str(row.id),
     handle: str(row.handle),
     title: str(row.title),
     description: str(row.description),
-    image: image?.url ? image : null,
+    image,
     featuredProductHandles: list<string>(row.featured_product_handles),
   };
 }

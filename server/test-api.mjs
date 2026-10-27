@@ -80,6 +80,16 @@ const db = {
       title: 'Draft Collection',
       published: false,
     },
+    {
+      id: 'c-3',
+      handle: 'no-image-collection',
+      title: 'No Image Collection',
+      description: 'Collection without image.',
+      image: null,
+      featured_product_handles: [],
+      sort_order: 2,
+      published: true,
+    },
   ],
   site_settings: [
     {
@@ -271,15 +281,27 @@ function buildTestApp() {
   }
 
   function mapCollection(row) {
-    const image = row.image || null;
+    let image = null;
+    if (row.image && typeof row.image === 'object') {
+      const url = str(row.image.url).trim();
+      if (url) {
+        image = {
+          url,
+          altText: str(row.image.altText, str(row.title)),
+        };
+      }
+    } else if (typeof row.image_url === 'string' && row.image_url.trim()) {
+      image = {
+        url: row.image_url.trim(),
+        altText: str(row.title),
+      };
+    }
     return {
       id: str(row.id),
       handle: str(row.handle),
       title: str(row.title),
       description: str(row.description),
-      image: image?.url
-        ? image
-        : { url: '/images/hero/hero-fairy-moon.jpg', altText: str(row.title) },
+      image,
       featuredProductHandles: list(row.featured_product_handles),
     };
   }
@@ -484,7 +506,7 @@ function buildTestApp() {
     const razorpayKeyId = (process.env.RAZORPAY_KEY_ID || '').trim();
     const razorpayKeySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
     if (!razorpayKeyId || !razorpayKeySecret) {
-      return res.status(503).json({ error: 'Online payments are currently unavailable.' });
+      return sendError(res, 503, 'PAYMENT_UNAVAILABLE', 'Online payments are currently unavailable.');
     }
 
     const { data: result, error: dbError } = await mockSupabase.rpc('create_order_atomic', {
@@ -712,7 +734,8 @@ async function runTests() {
 
     assert.strictEqual(resCheckout.status, 503);
     const checkoutBody = await resCheckout.json();
-    assert.strictEqual(checkoutBody.error, 'Online payments are currently unavailable.');
+    assert.strictEqual(checkoutBody.error.code, 'PAYMENT_UNAVAILABLE');
+    assert.strictEqual(checkoutBody.error.message, 'Online payments are currently unavailable.');
 
     // Assert that no stock was deducted/reserved and no pending order was created
     const currentStock = db.products.find((p) => p.id === 'p-1').stock;
@@ -721,6 +744,20 @@ async function runTests() {
 
     if (originalKeyId !== undefined) process.env.RAZORPAY_KEY_ID = originalKeyId;
     if (originalKeySecret !== undefined) process.env.RAZORPAY_KEY_SECRET = originalKeySecret;
+    console.log('✓ PASS');
+
+    console.log('[TEST 12] Collection without image returns image: null...');
+    const resNoImg = await fetch(`${baseUrl}/collections/no-image-collection`);
+    assert.strictEqual(resNoImg.status, 200);
+    const noImgCol = await resNoImg.json();
+    assert.strictEqual(noImgCol.image, null);
+
+    const resAllCols = await fetch(`${baseUrl}/collections`);
+    assert.strictEqual(resAllCols.status, 200);
+    const allCols = await resAllCols.json();
+    const foundNoImg = allCols.find((c) => c.handle === 'no-image-collection');
+    assert.ok(foundNoImg);
+    assert.strictEqual(foundNoImg.image, null);
     console.log('✓ PASS');
 
     console.log('\n======================================================');
