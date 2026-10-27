@@ -14,6 +14,7 @@ import { ProductTabs } from '@/components/commerce/product-tabs';
 import { DoubleBezel } from '@/components/common/double-bezel';
 import { DataErrorState } from '@/components/common/error-retry';
 import { Clock, ShieldCheck, Truck } from 'lucide-react';
+import { collectionHref } from '@/lib/links';
 
 export function ProductView({ handle }: { handle: string }) {
   const { data: product, error, loading, reload } = useLive(
@@ -37,7 +38,7 @@ export function ProductView({ handle }: { handle: string }) {
               <p className="text-sm text-wine/70 font-light">
                 It may have been unpublished or the link may be out of date.
               </p>
-              <Link href="/collections/view/?handle=all" className="inline-block text-gold underline">
+              <Link href={collectionHref('all')} className="inline-block text-gold underline">
                 Browse all kits
               </Link>
             </div>

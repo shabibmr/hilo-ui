@@ -17,6 +17,10 @@ const db = {
 };
 const fake = createFakeSupabase(db);
 
+// Checkout reads the gateway keys at import time; make the suite independent of the developer's env.
+delete process.env.RAZORPAY_KEY_ID;
+delete process.env.RAZORPAY_KEY_SECRET;
+
 mock.module('../src/supabase.ts', { namedExports: { supabase: fake.client } });
 
 let server;

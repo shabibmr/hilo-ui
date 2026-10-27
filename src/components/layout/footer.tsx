@@ -7,6 +7,7 @@ import { Container } from '../common/container';
 import { Mail, MessageCircle, Camera } from 'lucide-react';
 import { useSiteSettings } from '@/lib/data/use-live';
 import { DataErrorState } from '@/components/common/error-retry';
+import { collectionHref } from '@/lib/links';
 
 export const Footer: React.FC = () => {
   const { settings, error, reload } = useSiteSettings();
@@ -80,7 +81,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2.5 text-[11px] font-body tracking-[0.12em] uppercase text-cream/70">
               <li>
                 <Link
-                  href="/collections/view/?handle=diy-kits"
+                  href={collectionHref('diy-kits')}
                   className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 >
                   DIY Embroidery Kits
@@ -88,7 +89,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
-                  href="/collections/view/?handle=gift-experiences"
+                  href={collectionHref('gift-experiences')}
                   className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 >
                   Gift Experiences
@@ -104,7 +105,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link
-                  href="/collections/view/?handle=all"
+                  href={collectionHref('all')}
                   className="hover:text-gold transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
                 >
                   All Products

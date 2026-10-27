@@ -5,6 +5,7 @@ import { SectionHeading } from '../common/section-heading';
 import { ProductCard } from '../commerce/product-card';
 import { Product } from '@/lib/data/types';
 import { CtaButton } from '../common/cta-button';
+import { collectionHref } from '@/lib/links';
 
 interface BestSellersSectionProps {
   products: Product[];
@@ -27,7 +28,7 @@ export const BestSellersSection: React.FC<BestSellersSectionProps> = ({ products
         </div>
 
         <div className="text-center pt-4">
-          <CtaButton href="/collections/view/?handle=diy-kits" variant="solid-wine" size="lg">
+          <CtaButton href={collectionHref('diy-kits')} variant="solid-wine" size="lg">
             View All DIY Kits
           </CtaButton>
         </div>

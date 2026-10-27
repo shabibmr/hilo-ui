@@ -7,6 +7,7 @@ import { useDrawer } from '@/hooks/use-drawer';
 import { ShoppingBag, Plus, Minus, Trash2 } from 'lucide-react';
 import { CtaButton } from '../common/cta-button';
 import { DoubleBezel } from '../common/double-bezel';
+import { collectionHref } from '@/lib/links';
 
 export const CartDrawer: React.FC = () => {
   const { cart, isOpen, closeCart, updateQuantity, removeItem } = useCartStore();
@@ -61,7 +62,7 @@ export const CartDrawer: React.FC = () => {
                 <p className="font-accent italic text-sm text-wine/60">
                   Begin your slow creative journey with one of our handcrafted kits.
                 </p>
-                <CtaButton href="/collections/view/?handle=diy-kits" onClick={closeCart} size="sm">
+                <CtaButton href={collectionHref('diy-kits')} onClick={closeCart} size="sm">
                   Explore DIY Kits
                 </CtaButton>
               </div>

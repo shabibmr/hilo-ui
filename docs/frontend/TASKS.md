@@ -40,6 +40,7 @@ Two lanes run at the same time. Lane 1 does not wait on the server. Lane 2 start
 - [x] A2. (Superseded by ADR 0001 / M3.) The provider switch no longer exists; the API is the only data path (no opt-in or fallback flags). `NEXT_PUBLIC_API_URL` is required and documented in `.env.local.example`.
 
 ## Accepted additions on the API
+
 Beyond the initial public read routes (B0–B3), `server/` carries additional endpoints, middleware, and operational capabilities accepted under ADR 0001 and `docs/backend/API_MIGRATION_PLAN.md`:
 
 - **Admin Routes (`server/src/routes/admin.ts`)**: Full CRUD and management endpoints mounted at `/api/v1/admin/*` for products, collections, orders, enquiries, customers, suppliers, purchase orders, site settings, invoices, and storage uploads. Authenticated via `requireAdminAuth` with Supabase Auth bearer tokens. Accepted per ADR 0001 ("Admin is API-only") and `docs/backend/API_MIGRATION_PLAN.md` Stage 3 (M3.1–M3.7), replacing direct Supabase browser access.

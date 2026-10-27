@@ -8,6 +8,7 @@ import { useCartStore } from '@/lib/cart/cart-store';
 import { ShoppingBag } from 'lucide-react';
 import { MobileNav } from './mobile-nav';
 import { PromoBar } from './promo-bar';
+import { collectionHref } from '@/lib/links';
 
 interface HeaderProps {
   variant?: 'overlay' | 'solid';
@@ -25,8 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   const totalCartCount = cart?.totalQuantity || 0;
 
   const navLinks = [
-    { label: 'Shop Kits', href: '/collections/view/?handle=diy-kits' },
-    { label: 'Gift Experiences', href: '/collections/view/?handle=gift-experiences' },
+    { label: 'Shop Kits', href: collectionHref('diy-kits') },
+    { label: 'Gift Experiences', href: collectionHref('gift-experiences') },
     { label: 'Workshops', href: '/workshops' },
     { label: 'Customisation', href: '/customisation' },
     { label: 'Gallery', href: '/gallery' },

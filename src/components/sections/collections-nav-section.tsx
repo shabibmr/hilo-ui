@@ -8,6 +8,7 @@ import { Container } from '../common/container';
 import { SectionHeading } from '../common/section-heading';
 import { DoubleBezel } from '../common/double-bezel';
 import { HomepageContent } from '@/lib/data/types';
+import { collectionHref } from '@/lib/links';
 
 interface CollectionsNavSectionProps {
   items: HomepageContent['collectionsNav'];
@@ -47,7 +48,7 @@ export const CollectionsNavSection: React.FC<CollectionsNavSectionProps> = ({ it
                 ? '/workshops'
                 : item.handle === 'customisation'
                   ? '/customisation'
-                  : `/collections/view/?handle=${encodeURIComponent(item.handle)}`;
+                  : collectionHref(item.handle);
 
             const imageSrc = collectionImages[item.handle] ?? null;
             const blurb = collectionBlurbs[item.handle] || '';
