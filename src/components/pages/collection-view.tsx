@@ -10,6 +10,7 @@ import { CartDrawer } from '@/components/commerce/cart-drawer';
 import { Container } from '@/components/common/container';
 import { ProductCard } from '@/components/commerce/product-card';
 import { DataErrorState } from '@/components/common/error-retry';
+import { collectionHref } from '@/lib/links';
 
 export function CollectionView({ handle }: { handle: string }) {
   const { data, error, loading, reload } = useLive(async () => {
@@ -50,7 +51,7 @@ export function CollectionView({ handle }: { handle: string }) {
           ) : data?.missing ? (
             <div className="text-center py-16 space-y-3">
               <p className="font-display text-xl text-wine/70">This collection doesn&apos;t exist.</p>
-              <Link href="/collections/view/?handle=all" className="inline-block text-gold underline">
+              <Link href={collectionHref('all')} className="inline-block text-gold underline">
                 Browse all kits
               </Link>
             </div>

@@ -9,6 +9,7 @@ import { Container } from '@/components/common/container';
 import { CtaButton } from '@/components/common/cta-button';
 import { placeOrder, formatCustomerName, type CheckoutCustomer } from '@/lib/checkout/place-order';
 import { ShieldCheck, CreditCard, Smartphone, ShoppingBag } from 'lucide-react';
+import { collectionHref } from '@/lib/links';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -77,7 +78,7 @@ export default function CheckoutPage() {
                 <p className="font-accent italic text-sm text-wine/60 max-w-sm">
                   Add a handcrafted kit to your basket before checking out.
                 </p>
-                <CtaButton href="/collections/view/?handle=diy-kits" size="sm">
+                <CtaButton href={collectionHref('diy-kits')} size="sm">
                   Explore DIY Kits
                 </CtaButton>
               </div>

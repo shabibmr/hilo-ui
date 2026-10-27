@@ -46,7 +46,7 @@ Two lanes run at the same time. Lane 1 does not wait on the server. Lane 2 start
 
 - [x] G1. `npm run lint` passes.
 - [x] G2. `npm run build` passes.
-- [~] G3. Browser, provider `mock`, desktop and 375px: `/`, `/collections/diy-kits/`, `/collections/view/?handle=diy-kits`, `/products/blooming-roses/`, `/products/view/?handle=blooming-roses`, cart open and close, checkout through `?preview=1`, contact page. Tagline, Accessories badge, and six philosophy cards plus the ritual cell are visible on `/`.
+- [~] G3. Browser, against a running API (the mock provider was removed in M3), desktop and 375px: `/`, `/collections/diy-kits/`, `/collections/view/?handle=diy-kits`, `/products/blooming-roses/`, `/products/view/?handle=blooming-roses`, cart open and close, checkout through `?preview=1`, contact page. Tagline, Accessories badge, and six philosophy cards plus the ritual cell are visible on `/`.
 - [ ] G4. Browser, against the API (the only path since M3), with the server running and a real service-role key: the same routes show database rows, a draft product is hidden, and a contact insert lands in `enquiries`. An unreachable `NEXT_PUBLIC_API_URL` shows `DataErrorState` on the hero, promo bar, footer, and contact address, with a working retry. (The old "set the default provider to api" step is obsolete after M3.)
 
 ## API-only (ADR 0001): remove mock and direct Supabase

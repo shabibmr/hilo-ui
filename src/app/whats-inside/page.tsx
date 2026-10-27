@@ -12,6 +12,7 @@ import { BeeCompanion } from '@/components/motion/bee-companion';
 import { DataErrorState } from '@/components/common/error-retry';
 import { useLive } from '@/lib/data/use-live';
 import { FileText, Circle, Feather, Pin, Smile, Book, QrCode, Layers, Folder } from 'lucide-react';
+import { collectionHref } from '@/lib/links';
 
 const iconMap: Record<string, React.ReactNode> = {
   FileText: <FileText className="w-8 h-8 text-gold" />,
@@ -73,7 +74,7 @@ export default function WhatsInsidePage() {
               </div>
 
               <div className="text-center">
-                <CtaButton href="/collections/view/?handle=diy-kits" size="lg">
+                <CtaButton href={collectionHref('diy-kits')} size="lg">
                   Start Your First Stitch
                 </CtaButton>
               </div>
