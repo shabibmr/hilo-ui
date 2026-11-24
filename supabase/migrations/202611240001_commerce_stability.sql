@@ -27,6 +27,9 @@ create index if not exists cart_items_cart_id_idx on public.cart_items(cart_id);
 alter table public.carts enable row level security;
 alter table public.cart_items enable row level security;
 
+revoke all on table public.carts, public.cart_items from anon, authenticated;
+grant all on table public.carts, public.cart_items to service_role;
+
 -- Serialize mutations per cart and product so concurrent tabs cannot lose increments.
 create or replace function public.add_cart_item(
   p_cart_id uuid,
