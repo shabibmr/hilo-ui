@@ -33,16 +33,30 @@ declare global {
   }
 }
 
-async function cancelPendingOrder(orderId: string): Promise<void> {
+async function cancelPendingOrder(orderId: string): Promise<boolean> {
   try {
-    await fetch(`${getApiBaseUrl()}/api/v1/checkout/orders/${encodeURIComponent(orderId)}/cancel`, {
-      method: 'POST',
-      cache: 'no-store',
-      keepalive: true,
-    });
+    const cancelResponse = await fetch(
+      `${getApiBaseUrl()}/api/v1/checkout/orders/${encodeURIComponent(orderId)}/cancel`,
+      { method: 'POST', cache: 'no-store', keepalive: true }
+    );
+    if (cancelResponse.ok) return false;
+
+    // If the webhook won the race and the order is already paid, continue to the
+    // confirmation page rather than showing a cancellation message.
+    if (cancelResponse.status === 409) {
+      const statusResponse = await fetch(
+        `${getApiBaseUrl()}/api/v1/checkout/orders/${encodeURIComponent(orderId)}/status`,
+        { cache: 'no-store', keepalive: true }
+      );
+      if (statusResponse.ok) {
+        const status = await statusResponse.json() as { paymentStatus?: string };
+        return status.paymentStatus === 'captured';
+      }
+    }
   } catch {
     // The scheduled pending-order expiry remains the fallback if the browser goes offline.
   }
+  return false;
 }
 
 export class PaymentCancelled extends Error {
@@ -140,7 +154,10 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
       retry: { enabled: true },
       modal: {
         ondismiss: () => {
-          void cancelPendingOrder(order.orderId!).finally(() => reject(new PaymentCancelled()));
+          void cancelPendingOrder(order.orderId!).then((paid) => {
+            if (paid) resolve(order.orderId!);
+            else reject(new PaymentCancelled());
+          });
         },
       },
     });
