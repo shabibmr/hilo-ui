@@ -6,19 +6,18 @@ const router = Router();
 
 function validSignature(rawBody: Buffer, signature: string, secret: string): boolean {
   const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-  const a = Buffer.from(expected);
-  const b = Buffer.from(signature.toLowerCase());
+  const a = Buffer.from(expected, 'hex');
+  const b = Buffer.from(signature, 'hex');
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
 /**
- * Port of supabase/functions/razorpay-webhook. Needs the raw body for the HMAC, so this
- * router must be mounted before express.json(). Unlike the Edge Function, a missing
- * RAZORPAY_WEBHOOK_SECRET rejects everything instead of skipping verification.
+ * Razorpay webhooks require the exact raw request body for signature verification.
+ * This router must remain mounted before express.json().
  */
 router.post('/webhooks/razorpay', express.raw({ type: '*/*', limit: '256kb' }), async (req, res) => {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-  const signature = req.header('x-razorpay-signature');
+  const signature = req.header('x-razorpay-signature') ?? '';
   const raw = req.body as Buffer;
 
   if (!secret) {
@@ -34,44 +33,42 @@ router.post('/webhooks/razorpay', express.raw({ type: '*/*', limit: '256kb' }), 
   try {
     const payload = JSON.parse(raw.toString('utf8'));
     if (payload.event !== 'order.paid' && payload.event !== 'payment.captured') {
-      return res.json({ status: 'ok' });
+      return res.json({ status: 'ok', ignored: true });
     }
 
     const payment = payload.payload?.payment?.entity;
     const razorpayOrderId = payment?.order_id || payload.payload?.order?.entity?.id;
-    if (!razorpayOrderId) return res.json({ status: 'ignored' });
-
-    const { data: order, error: findError } = await supabase
-      .from('orders')
-      .select('id, status')
-      .eq('razorpay_order_id', razorpayOrderId)
-      .maybeSingle();
-    if (findError || !order) {
-      console.error(`Order with razorpay_order_id ${razorpayOrderId} not found.`);
-      return res.status(404).json({ error: 'Order not found' });
+    const eventId = req.header('x-razorpay-event-id');
+    if (!eventId) return res.status(400).json({ error: 'Missing Razorpay event ID' });
+    if (!razorpayOrderId || !payment?.id) {
+      return res.status(400).json({ error: 'Webhook is missing payment/order identifiers' });
+    }
+    if (payment.status !== 'captured') {
+      return res.status(409).json({ error: 'Payment is not captured' });
+    }
+    if (!Number.isSafeInteger(payment.amount) || payment.amount <= 0 || typeof payment.currency !== 'string') {
+      return res.status(400).json({ error: 'Invalid payment amount or currency' });
     }
 
-    // Replayed delivery: only a pending order is moved to paid.
-    if (order.status !== 'pending') return res.json({ status: 'ok', duplicate: true });
-
-    await supabase
-      .from('orders')
-      .update({ razorpay_payment_id: payment?.id || null })
-      .eq('id', order.id);
-
-    // set_order_status('paid') also creates the sequential HA-xxxxx invoice.
-    const { error: statusError } = await supabase.rpc('set_order_status', {
-      p_order: order.id,
-      p_status: 'paid',
+    const { data, error } = await supabase.rpc('process_razorpay_payment', {
+      p_event_id: eventId,
+      p_event_type: payload.event,
+      p_razorpay_order_id: razorpayOrderId,
+      p_payment_id: payment.id,
+      p_amount_paise: payment.amount,
+      p_currency: payment.currency,
+      p_payment_status: payment.status,
     });
-    if (statusError) {
-      console.error(`Failed to mark order ${order.id} as paid:`, statusError.message);
-      return res.status(500).json({ error: statusError.message });
+
+    if (error) {
+      console.error('Razorpay webhook database processing failed:', error.message);
+      // Non-2xx prompts Razorpay to retry; the RPC transaction does not persist failed events.
+      return res.status(500).json({ error: 'Webhook processing failed' });
     }
-    res.json({ status: 'ok' });
+    return res.json(data ?? { status: 'ok' });
   } catch (err) {
     console.error('Webhook processing error:', err instanceof Error ? err.message : err);
-    res.status(500).json({ error: 'Webhook processing failed' });
+    return res.status(400).json({ error: 'Invalid webhook payload' });
   }
 });
 
