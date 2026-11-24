@@ -54,6 +54,25 @@ Redirect `.../hilo/` to `.../hilo/store/` in nginx, then remove only the old sto
 Rollback: restore from the tarball and drop the redirect.
 
 ## Stage 2: checkout cutover
+
+### Phase 1 commerce database migration
+
+Before deploying the updated storefront/API, take a database backup and apply the persistent-cart migration:
+
+```bash
+pg_dump "$SUPABASE_DB_URL" -Fc -f hilo-before-commerce-$(date +%F).dump
+psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/202611240001_commerce_stability.sql
+```
+
+The migration creates `carts` and `cart_items`, enables RLS without public policies, and grants cart mutation RPC execution only to `service_role`. The API must use the server-side Supabase service-role key; never expose it to the storefront.
+
+After deployment, verify:
+- Create a cart and add a published in-stock product.
+- Refresh the browser and confirm the cart is recovered from the API.
+- Update quantity and remove a line.
+- Attempt fractional, zero, and over-stock quantities; all must be rejected.
+- Confirm an expired cart is renewed and its stale lines are not restored.
+
 `server/` already exposes `POST /api/v1/checkout/orders` and `POST /api/v1/webhooks/razorpay` on the same process as the catalog. Cutover still waits on the checks below. Do not switch live keys until those pass.
 
 1. Deploy the API with Razorpay test keys; add a test webhook in the Razorpay dashboard pointing at the API. Leave the production webhook on the Edge Function.

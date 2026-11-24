@@ -15,6 +15,7 @@ import { DoubleBezel } from '@/components/common/double-bezel';
 import { DataErrorState } from '@/components/common/error-retry';
 import { Clock, ShieldCheck, Truck } from 'lucide-react';
 import { collectionHref } from '@/lib/links';
+import { formatCurrency } from '@/lib/format/currency';
 
 export function ProductView({ handle }: { handle: string }) {
   const { data: product, error, loading, reload } = useLive(
@@ -71,7 +72,7 @@ export function ProductView({ handle }: { handle: string }) {
                 </div>
 
                 <div className="text-2xl font-display font-medium text-wine">
-                  ₹{product.price}
+                  {formatCurrency(product.price, product.currencyCode)}
                   <span className="text-xs font-body font-light text-wine/60 ml-2">
                     Inclusive of all taxes
                   </span>

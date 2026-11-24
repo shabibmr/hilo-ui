@@ -25,7 +25,6 @@ interface CreateOrderResponse {
 
 interface RazorpayInstance {
   open: () => void;
-  on: (event: 'payment.failed', handler: (res: { error?: { description?: string } }) => void) => void;
 }
 
 declare global {
@@ -34,9 +33,35 @@ declare global {
   }
 }
 
+async function cancelPendingOrder(orderId: string): Promise<boolean> {
+  try {
+    const cancelResponse = await fetch(
+      `${getApiBaseUrl()}/api/v1/checkout/orders/${encodeURIComponent(orderId)}/cancel`,
+      { method: 'POST', cache: 'no-store', keepalive: true }
+    );
+    if (cancelResponse.ok) return false;
+
+    // If the webhook won the race and the order is already paid, continue to the
+    // confirmation page rather than showing a cancellation message.
+    if (cancelResponse.status === 409) {
+      const statusResponse = await fetch(
+        `${getApiBaseUrl()}/api/v1/checkout/orders/${encodeURIComponent(orderId)}/status`,
+        { cache: 'no-store', keepalive: true }
+      );
+      if (statusResponse.ok) {
+        const status = await statusResponse.json() as { paymentStatus?: string };
+        return status.paymentStatus === 'captured';
+      }
+    }
+  } catch {
+    // The scheduled pending-order expiry remains the fallback if the browser goes offline.
+  }
+  return false;
+}
+
 export class PaymentCancelled extends Error {
   constructor() {
-    super('Payment was not completed. Your items stay reserved for 15 minutes.');
+    super('Checkout was closed before payment completed. Your basket is still available.');
   }
 }
 
@@ -71,6 +96,11 @@ function createOrder(body: unknown): Promise<Response> {
  * Razorpay reports success; the webhook is what actually marks the order paid.
  */
 export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promise<string> {
+  // Load the gateway before creating an order so script failures never reserve stock.
+  await loadRazorpayScript();
+  const Razorpay = window.Razorpay;
+  if (!Razorpay) throw new Error('Payment window unavailable. Please try again.');
+
   const fullName = customer.fullName?.trim() || formatCustomerName(customer.firstName, customer.lastName);
   const res = await createOrder({
     customer: {
@@ -86,7 +116,7 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
         country: 'IN',
       },
     },
-    items: cart.lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
+    items: cart.lines.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
   });
 
   const order = (await res.json().catch(() => ({}))) as Partial<CreateOrderResponse>;
@@ -100,18 +130,11 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
           : 'We could not place your order. Please try again.');
 
   if (!res.ok || !order.orderId) {
-    if (res.status === 503 || errorMessage.includes('Online payments are currently unavailable')) {
-      throw new Error('Online payments are currently unavailable. Your order was not placed and no payment was charged.');
-    }
     throw new Error(errorMessage);
   }
-  if (!order.keyId) {
-    throw new Error('Online payments are currently unavailable. Your order was not placed and no payment was charged.');
+  if (!order.keyId || !order.razorpayOrderId || !order.amount || !order.currency) {
+    throw new Error('The payment session is incomplete. Please contact support before retrying.');
   }
-
-  await loadRazorpayScript();
-  const Razorpay = window.Razorpay;
-  if (!Razorpay) throw new Error('Payment window unavailable. Please try again.');
 
   return new Promise<string>((resolve, reject) => {
     const rzp = new Razorpay({
@@ -125,12 +148,19 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
         email: customer.email,
         contact: customer.phone,
       },
+      // The browser callback only advances to the pending screen. The backend
+      // webhook and status endpoint remain the source of truth for payment success.
       handler: () => resolve(order.orderId!),
-      modal: { ondismiss: () => reject(new PaymentCancelled()) },
+      retry: { enabled: true },
+      modal: {
+        ondismiss: () => {
+          void cancelPendingOrder(order.orderId!).then((paid) => {
+            if (paid) resolve(order.orderId!);
+            else reject(new PaymentCancelled());
+          });
+        },
+      },
     });
-    rzp.on('payment.failed', (r) =>
-      reject(new Error(r.error?.description || 'Payment failed. Please try again.'))
-    );
     rzp.open();
   });
 }

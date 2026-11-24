@@ -38,10 +38,8 @@ export const useCartStore = create<CartState>()(
         const { cart } = get();
         if (cart?.id) {
           try {
-            await commerceRepository.hydrateCart(cart);
-            // Adopt the re-priced basket so stale prices/stock never show.
-            const fresh = await commerceRepository.getCart(cart.id);
-            if (fresh) set({ cart: fresh });
+            const hydrated = await commerceRepository.hydrateCart(cart);
+            set({ cart: hydrated });
           } catch (error) {
             console.error('Could not refresh basket:', error);
           }
@@ -58,7 +56,7 @@ export const useCartStore = create<CartState>()(
           if (!cart?.id) {
             cart = await commerceRepository.createCart();
           } else {
-            await commerceRepository.hydrateCart(cart);
+            cart = await commerceRepository.hydrateCart(cart);
           }
 
           const targetVariant = variant || product.variants[0];
@@ -86,8 +84,18 @@ export const useCartStore = create<CartState>()(
 
         set({ isLoading: true, error: null });
         try {
-          await commerceRepository.hydrateCart(cart);
-          const updatedCart = await commerceRepository.updateCartLine(cart.id, lineId, quantity);
+          const originalLine = cart.lines.find((line) => line.id === lineId);
+          const hydrated = await commerceRepository.hydrateCart(cart);
+          const line = hydrated.lines.find((entry) => entry.id === lineId) ??
+            (originalLine && hydrated.lines.find((entry) =>
+              entry.product.id === originalLine.product.id &&
+              entry.variant.id === originalLine.variant.id
+            ));
+          if (!line) {
+            set({ cart: hydrated, isLoading: false });
+            return;
+          }
+          const updatedCart = await commerceRepository.updateCartLine(hydrated.id, line.id, quantity);
           set({ cart: updatedCart, isLoading: false });
         } catch (error) {
           console.error('Error updating cart quantity:', error);
@@ -102,10 +110,20 @@ export const useCartStore = create<CartState>()(
         const { cart } = get();
         if (!cart?.id) return;
 
-        set({ isLoading: true });
+        set({ isLoading: true, error: null });
         try {
-          await commerceRepository.hydrateCart(cart);
-          const updatedCart = await commerceRepository.removeCartLine(cart.id, lineId);
+          const originalLine = cart.lines.find((line) => line.id === lineId);
+          const hydrated = await commerceRepository.hydrateCart(cart);
+          const line = hydrated.lines.find((entry) => entry.id === lineId) ??
+            (originalLine && hydrated.lines.find((entry) =>
+              entry.product.id === originalLine.product.id &&
+              entry.variant.id === originalLine.variant.id
+            ));
+          if (!line) {
+            set({ cart: hydrated, isLoading: false });
+            return;
+          }
+          const updatedCart = await commerceRepository.removeCartLine(hydrated.id, line.id);
           set({ cart: updatedCart, isLoading: false });
         } catch (error) {
           console.error('Error removing cart item:', error);

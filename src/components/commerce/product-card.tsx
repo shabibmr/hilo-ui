@@ -8,6 +8,7 @@ import { useCartStore } from '@/lib/cart/cart-store';
 import { ShoppingBag, Clock } from 'lucide-react';
 import { DoubleBezel } from '../common/double-bezel';
 import { productHref } from '@/lib/links';
+import { formatCurrency } from '@/lib/format/currency';
 
 interface ProductCardProps {
   product: Product;
@@ -68,7 +69,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <span className="text-[10px] text-wine/45 block font-medium tracking-[0.12em] uppercase">
                 Price
               </span>
-              <span className="font-display text-lg font-medium text-wine">₹{product.price}</span>
+              <span className="font-display text-lg font-medium text-wine">{formatCurrency(product.price, product.currencyCode)}</span>
             </div>
 
             <button

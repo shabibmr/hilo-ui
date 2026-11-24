@@ -1,61 +1,154 @@
 import { Router } from 'express';
-import { rateLimit, wrap } from '../http.js';
+import { rateLimit, sendError, wrap } from '../http.js';
 import { supabase } from '../supabase.js';
+import { normalizeCheckoutItems, validateCheckoutCustomer } from '../commerce/validation.js';
 
 const router = Router();
+const str = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
-const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+router.get('/checkout/orders/:orderId/status', rateLimit(60, 60_000), wrap(async (req, res) => {
+  const orderId = str(req.params.orderId);
+  if (!orderId) {
+    sendError(res, 400, 'VALIDATION_ERROR', 'Order id is required.');
+    return;
+  }
 
-/** Port of supabase/functions/create-order. Prices come from the DB only. */
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id, status, razorpay_payment_id, refund_id, created_at')
+    .eq('id', orderId)
+    .maybeSingle();
+
+  if (error) {
+    sendError(res, 500, 'DB_ERROR', 'Unable to retrieve payment status.');
+    return;
+  }
+  if (!order) {
+    sendError(res, 404, 'NOT_FOUND', 'Order not found.');
+    return;
+  }
+
+  const paymentStatus = order.status === 'refunded'
+    ? 'refunded'
+    : order.refund_id
+      ? 'refund_pending'
+      : Boolean(order.razorpay_payment_id) || ['paid', 'shipped', 'delivered'].includes(order.status)
+        ? 'captured'
+        : order.status === 'cancelled' ? 'failed' : 'pending';
+
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({
+    orderId: order.id,
+    orderStatus: order.status,
+    paymentStatus,
+    updatedAt: order.created_at,
+  });
+}));
+
+router.post('/checkout/orders/:orderId/cancel', rateLimit(20, 60_000), wrap(async (req, res) => {
+  const orderId = str(req.params.orderId);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId)) {
+    sendError(res, 400, 'VALIDATION_ERROR', 'Invalid order id.');
+    return;
+  }
+
+  const { data: order, error: lookupError } = await supabase
+    .from('orders')
+    .select('id, status')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (lookupError) {
+    sendError(res, 500, 'DB_ERROR', 'Unable to retrieve order.');
+    return;
+  }
+  if (!order) {
+    sendError(res, 404, 'NOT_FOUND', 'Order not found.');
+    return;
+  }
+  if (order.status === 'cancelled') {
+    res.json({ orderId, status: 'cancelled' });
+    return;
+  }
+  if (order.status !== 'pending') {
+    sendError(res, 409, 'ORDER_NOT_CANCELLABLE', 'This order can no longer be cancelled from checkout.');
+    return;
+  }
+
+  const { error: cancelError } = await supabase.rpc('set_order_status', {
+    p_order: orderId,
+    p_status: 'cancelled',
+  });
+  if (cancelError) {
+    sendError(res, 409, 'ORDER_CANCEL_FAILED', cancelError.message);
+    return;
+  }
+  res.json({ orderId, status: 'cancelled' });
+}));
+
+/** Prices and stock are calculated and reserved in the database, never from client values. */
 router.post(
   '/checkout/orders',
   rateLimit(10, 60_000),
   wrap(async (req, res) => {
     const { customer, items } = req.body ?? {};
-    const addr = customer?.shippingAddress;
-    if (!str(customer?.name) || !str(customer?.email)) {
-      return res.status(400).json({ error: 'Customer name and email are required.' });
+    const customerResult = validateCheckoutCustomer(customer);
+    if (!customerResult.ok) {
+      sendError(res, 400, 'VALIDATION_ERROR', customerResult.error);
+      return;
     }
-    if (!str(addr?.line1) || !str(addr?.city)) {
-      return res.status(400).json({ error: 'Incomplete delivery shipping address.' });
+    const itemsResult = normalizeCheckoutItems(items);
+    if (!itemsResult.ok) {
+      sendError(res, 400, 'VALIDATION_ERROR', itemsResult.error);
+      return;
     }
-    if (!Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: 'Order must contain at least one item.' });
-    }
-    for (const it of items) {
-      if (!str(it?.productId) || typeof it.quantity !== 'number' || it.quantity < 1) {
-        return res.status(400).json({ error: 'Invalid product or quantity in line items.' });
-      }
-    }
+    const normalizedCustomer = customerResult.value;
+    const normalizedItems = itemsResult.value;
 
+    const { data: pricedProducts, error: productLookupError } = await supabase
+      .from('products')
+      .select('id, currency_code')
+      .in('id', normalizedItems.map((item) => item.product_id));
+    if (productLookupError) {
+      sendError(res, 500, 'DB_ERROR', 'Unable to validate product currency.');
+      return;
+    }
+    if ((pricedProducts ?? []).some((product) => String(product.currency_code || 'INR').toUpperCase() !== 'INR')) {
+      sendError(res, 409, 'CURRENCY_NOT_SUPPORTED', 'Checkout currently supports INR orders only.');
+      return;
+    }
     const razorpayKeyId = (process.env.RAZORPAY_KEY_ID || '').trim();
     const razorpayKeySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
     if (!razorpayKeyId || !razorpayKeySecret) {
-      return res.status(503).json({ error: 'Online payments are currently unavailable. Your order was not placed and no payment was charged.' });
-
+      sendError(res, 503, 'PAYMENTS_UNAVAILABLE', 'Online payments are currently unavailable. Your order was not placed and no payment was charged.');
+      return;
     }
 
     const { data: result, error: dbError } = await supabase.rpc('create_order_atomic', {
       p_customer: {
-        name: str(customer.name),
-        email: str(customer.email),
-        phone: str(customer.phone) || null,
-        shipping_address: addr,
+        name: normalizedCustomer.name,
+        email: normalizedCustomer.email,
+        phone: normalizedCustomer.phone,
+        shipping_address: normalizedCustomer.shippingAddress,
       },
-      p_items: items.map((it: { productId: string; quantity: number }) => ({
-        product_id: it.productId,
-        quantity: Math.floor(it.quantity),
-      })),
+      p_items: normalizedItems,
       p_razorpay_order_id: null,
     });
-    if (dbError) return res.status(400).json({ error: dbError.message || 'Unable to place order.' });
+    if (dbError) {
+      sendError(res, 409, 'ORDER_REJECTED', dbError.message || 'Unable to place order.');
+      return;
+    }
 
     const orderId: string = result.order_id;
     const amount = Math.round(Number(result.subtotal) * 100);
-    let razorpayOrderId: string;
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      await supabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
+      sendError(res, 409, 'INVALID_ORDER_AMOUNT', 'The order amount could not be validated.');
+      return;
+    }
 
+    let razorpayOrderId: string;
     try {
-      const rzp = await fetch('https://api.razorpay.com/v1/orders', {
+      const response = await fetch('https://api.razorpay.com/v1/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,33 +158,45 @@ router.post(
           amount,
           currency: 'INR',
           receipt: `rcpt_${orderId.slice(0, 10)}`,
-          notes: { hilo_order_id: orderId, customer_email: str(customer.email) },
+          notes: { hilo_order_id: orderId, customer_email: normalizedCustomer.email },
         }),
       });
-      if (!rzp.ok) {
-        console.error('Razorpay order creation failed:', await rzp.text());
-        // Release the reserved stock.
+      if (!response.ok) {
+        console.error('Razorpay order creation failed:', await response.text());
         await supabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
-        return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
+        sendError(res, 502, 'PAYMENT_GATEWAY_ERROR', 'Failed to initiate gateway payment session.');
+        return;
       }
-      razorpayOrderId = ((await rzp.json()) as { id: string }).id;
-    } catch (err) {
-      console.error('Razorpay order creation failed:', err);
-      // Release the reserved stock.
+      const gatewayOrder = await response.json() as { id?: string };
+      if (!gatewayOrder.id) throw new Error('Razorpay did not return an order id.');
+      razorpayOrderId = gatewayOrder.id;
+    } catch (error) {
+      console.error('Razorpay order creation failed:', error);
       await supabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
-      return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
+      sendError(res, 502, 'PAYMENT_GATEWAY_ERROR', 'Failed to initiate gateway payment session.');
+      return;
     }
 
-    await supabase.from('orders').update({ razorpay_order_id: razorpayOrderId }).eq('id', orderId);
+    const { error: saveGatewayIdError } = await supabase
+      .from('orders')
+      .update({ razorpay_order_id: razorpayOrderId })
+      .eq('id', orderId);
+    if (saveGatewayIdError) {
+      console.error('Could not save Razorpay order id:', saveGatewayIdError.message);
+      // The gateway order exists, but without this link its webhook cannot reconcile it.
+      await supabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
+      sendError(res, 500, 'ORDER_PERSISTENCE_ERROR', 'Unable to prepare payment. Please retry checkout.');
+      return;
+    }
 
-    res.json({
+    res.status(201).json({
       success: true,
       orderId,
       razorpayOrderId,
       amount,
       currency: 'INR',
       keyId: razorpayKeyId,
-      customer: { name: customer.name, email: customer.email, phone: customer.phone },
+      customer: { name: normalizedCustomer.name, email: normalizedCustomer.email, phone: normalizedCustomer.phone },
     });
   })
 );

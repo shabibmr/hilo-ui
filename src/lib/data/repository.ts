@@ -6,7 +6,7 @@ export interface CommerceRepository {
   getBestSellers(): Promise<Product[]>;
   getCollections(): Promise<Collection[]>;
   getCollectionByHandle(handle: string): Promise<Collection | null>;
-  createCart(): Promise<Cart>;
+  createCart(id?: string): Promise<Cart>;
   getCart(cartId: string): Promise<Cart | null>;
   /**
    * Reconciles backend cart state with a client-persisted cart before mutating it.
@@ -15,7 +15,7 @@ export interface CommerceRepository {
    * so line items aren't lost. A real Shopify provider would use the equivalent of
    * this for cart-merge/associate-on-load rather than a no-op.
    */
-  hydrateCart(cart: Cart): Promise<void>;
+  hydrateCart(cart: Cart): Promise<Cart>;
   addCartLine(
     cartId: string,
     productId: string,

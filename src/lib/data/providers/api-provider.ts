@@ -4,26 +4,44 @@ import { Cart, Collection, FounderStoryContent, HomepageContent, Product, SiteSe
 
 export { getApiBaseUrl };
 
-const apiCarts = new Map<string, Cart>();
-
 function apiBase(): string {
   return `${getApiBaseUrl()}/api/v1`;
 }
 
-async function apiGet<T>(path: string): Promise<T> {
-  const base = apiBase();
-  let res: Response;
+async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
   try {
-    res = await fetch(`${base}${path}`);
-  } catch (err) {
-    throw new Error(
-      `API ${path} is unreachable: ${err instanceof Error ? err.message : String(err)}`
-    );
+    const headers = new Headers(init?.headers);
+    if (init?.body && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+    response = await fetch(`${apiBase()}${path}`, {
+      ...init,
+      cache: 'no-store',
+      headers,
+    });
+  } catch (error) {
+    throw new Error(`API ${path} is unreachable: ${error instanceof Error ? error.message : String(error)}`);
   }
-  if (!res.ok) {
-    throw new Error(`API ${path} failed (${res.status})`);
+
+  if (response.status === 404) {
+    throw Object.assign(new Error('Resource not found.'), { status: 404 });
   }
-  return res.json() as Promise<T>;
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as {
+      error?: string | { message?: string };
+    } | null;
+    const message = typeof body?.error === 'string'
+      ? body.error
+      : body?.error?.message || `API ${path} failed (${response.status})`;
+    throw new Error(message);
+  }
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
+}
+
+async function apiGet<T>(path: string): Promise<T> {
+  return apiRequest<T>(path);
 }
 
 export class ApiCommerceRepository implements CommerceRepository {
@@ -42,18 +60,12 @@ export class ApiCommerceRepository implements CommerceRepository {
 
   async getProductByHandle(handle: string): Promise<Product | null> {
     if (!handle || !handle.trim()) return null;
-    const base = apiBase();
-    let res: Response;
     try {
-      res = await fetch(`${base}/products/${encodeURIComponent(handle.trim())}`);
-    } catch (err) {
-      throw new Error(
-        `API /products/${handle} is unreachable: ${err instanceof Error ? err.message : String(err)}`
-      );
+      return await apiGet<Product>(`/products/${encodeURIComponent(handle.trim())}`);
+    } catch (error) {
+      if ((error as { status?: number }).status === 404) return null;
+      throw error;
     }
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`API /products/${handle} failed (${res.status})`);
-    return res.json() as Promise<Product>;
   }
 
   async getBestSellers(): Promise<Product[]> {
@@ -66,54 +78,63 @@ export class ApiCommerceRepository implements CommerceRepository {
 
   async getCollectionByHandle(handle: string): Promise<Collection | null> {
     if (!handle || !handle.trim()) return null;
-    const base = apiBase();
-    let res: Response;
     try {
-      res = await fetch(`${base}/collections/${encodeURIComponent(handle.trim())}`);
-    } catch (err) {
-      throw new Error(
-        `API /collections/${handle} is unreachable: ${err instanceof Error ? err.message : String(err)}`
-      );
+      return await apiGet<Collection>(`/collections/${encodeURIComponent(handle.trim())}`);
+    } catch (error) {
+      if ((error as { status?: number }).status === 404) return null;
+      throw error;
     }
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`API /collections/${handle} failed (${res.status})`);
-    return res.json() as Promise<Collection>;
   }
 
-  async createCart(id = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`): Promise<Cart> {
-    const newCart: Cart = {
-      id,
-      lines: [],
-      subtotal: 0,
-      currencyCode: 'INR',
-      totalQuantity: 0,
-    };
-    apiCarts.set(id, newCart);
-    return newCart;
+  async createCart(id?: string): Promise<Cart> {
+    const result = await apiRequest<{ id: string }>('/carts', {
+      method: 'POST',
+      body: JSON.stringify(id ? { id } : {}),
+    });
+    const cart = await this.getCart(result.id);
+    if (!cart) throw new Error('The cart could not be initialized.');
+    return cart;
   }
 
   async getCart(cartId: string): Promise<Cart | null> {
-    return apiCarts.get(cartId) || null;
+    if (!cartId) return null;
+    try {
+      return await apiGet<Cart>(`/carts/${encodeURIComponent(cartId)}`);
+    } catch (error) {
+      if ((error as { status?: number }).status === 404) return null;
+      throw error;
+    }
   }
 
-  async hydrateCart(cart: Cart): Promise<void> {
-    if (!cart?.id) return;
-    const existing = apiCarts.get(cart.id);
-    const lines =
-      Array.isArray(cart.lines) && cart.lines.length > 0
-        ? cart.lines.map((l) => ({ ...l }))
-        : existing?.lines
-        ? [...existing.lines]
-        : [];
-    const hydrated: Cart = {
-      id: cart.id,
-      lines,
-      currencyCode: cart.currencyCode || existing?.currencyCode || 'INR',
-      subtotal: cart.subtotal ?? existing?.subtotal ?? 0,
-      totalQuantity: cart.totalQuantity ?? existing?.totalQuantity ?? 0,
-    };
-    this.recalculateCart(hydrated);
-    apiCarts.set(cart.id, hydrated);
+  /**
+   * Restores a local cart only when its server-side cart has expired or is missing.
+   * Existing server state always wins, preventing stale tabs from overwriting newer
+   * cart mutations.
+   */
+  async hydrateCart(cart: Cart): Promise<Cart> {
+    if (!cart?.id) return this.createCart();
+
+    // Older storefront builds used non-UUID in-memory cart ids. Migrate those
+    // persisted baskets to a new server cart instead of failing initialization.
+    const isServerCartId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cart.id);
+    const current = isServerCartId ? await this.getCart(cart.id) : null;
+    if (current) return current;
+
+    let restored = await this.createCart(isServerCartId ? cart.id : undefined);
+    for (const line of cart.lines ?? []) {
+      try {
+        restored = await this.addCartLine(
+          restored.id,
+          line.product.id,
+          line.variant.id,
+          line.quantity
+        );
+      } catch {
+        // Catalog availability or stock changed while the browser was offline.
+        // Keep restoring other lines; the server remains authoritative.
+      }
+    }
+    return restored;
   }
 
   async addCartLine(
@@ -121,120 +142,31 @@ export class ApiCommerceRepository implements CommerceRepository {
     productId: string,
     variantId: string,
     quantity: number,
-    existingCart?: Cart | null
   ): Promise<Cart> {
-    let cart: Cart;
-    if (!cartId) {
-      cart = await this.createCart();
-    } else {
-      let found = apiCarts.get(cartId);
-      if (!found) {
-        const existingLines =
-          existingCart && existingCart.id === cartId && Array.isArray(existingCart.lines)
-            ? existingCart.lines.map((l) => ({ ...l }))
-            : [];
-        found = {
-          id: cartId,
-          lines: existingLines,
-          subtotal: existingCart?.subtotal ?? 0,
-          currencyCode: existingCart?.currencyCode || 'INR',
-          totalQuantity: existingCart?.totalQuantity ?? 0,
-        };
-        this.recalculateCart(found);
-        apiCarts.set(cartId, found);
-      } else if (
-        found.lines.length === 0 &&
-        existingCart &&
-        existingCart.id === cartId &&
-        Array.isArray(existingCart.lines) &&
-        existingCart.lines.length > 0
-      ) {
-        found.lines = existingCart.lines.map((l) => ({ ...l }));
-        this.recalculateCart(found);
-      }
-      cart = found;
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 20) {
+      throw new Error('Quantity must be a whole number between 1 and 20.');
     }
-
-    const product = await this.getProductById(productId);
-    if (!product) throw new Error('Product not found');
-    const variant = product.variants.find((v) => v.id === variantId) || product.variants[0];
-    if (!variant?.availableForSale) {
-      throw new Error(`${product.title} is sold out.`);
-    }
-
-    const existing = cart.lines.find(
-      (l) => l.product.id === productId && l.variant.id === variant.id
-    );
-    const wanted = (existing?.quantity ?? 0) + quantity;
-    if (variant.stock !== undefined && wanted > variant.stock) {
-      throw new Error(`Only ${variant.stock} of ${product.title} left in stock.`);
-    }
-
-    if (existing) {
-      existing.quantity = wanted;
-      existing.product = product;
-      existing.variant = variant;
-    } else {
-      cart.lines.push({
-        id: `line-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-        product,
-        variant,
-        quantity,
-      });
-    }
-
-    this.recalculateCart(cart);
-    apiCarts.set(cart.id, cart);
-    return cart;
+    const id = cartId || (await this.createCart()).id;
+    return apiRequest<Cart>(`/carts/${encodeURIComponent(id)}/items`, {
+      method: 'POST',
+      body: JSON.stringify({ productId, variantId, quantity }),
+    });
   }
 
   async updateCartLine(cartId: string, lineId: string, quantity: number): Promise<Cart> {
-    const cart = apiCarts.get(cartId);
-    if (!cart) throw new Error('Cart not found');
-
-    const lineIndex = cart.lines.findIndex((l) => l.id === lineId);
-    if (lineIndex > -1) {
-      if (quantity <= 0) {
-        cart.lines.splice(lineIndex, 1);
-      } else {
-        const stock = cart.lines[lineIndex].variant.stock;
-        if (stock !== undefined && quantity > stock) {
-          throw new Error(`Only ${stock} left in stock.`);
-        }
-        cart.lines[lineIndex].quantity = quantity;
-      }
+    if (!Number.isSafeInteger(quantity) || quantity < 0 || quantity > 20) {
+      throw new Error('Quantity must be a whole number between 0 and 20.');
     }
-
-    this.recalculateCart(cart);
-    apiCarts.set(cart.id, cart);
-    return cart;
+    return apiRequest<Cart>(
+      `/carts/${encodeURIComponent(cartId)}/items/${encodeURIComponent(lineId)}`,
+      { method: 'PATCH', body: JSON.stringify({ quantity }) }
+    );
   }
 
   async removeCartLine(cartId: string, lineId: string): Promise<Cart> {
-    return this.updateCartLine(cartId, lineId, 0);
-  }
-
-  private async getProductById(productId: string): Promise<Product | null> {
-    if (!productId || !productId.trim()) return null;
-    const base = apiBase();
-    let res: Response;
-    try {
-      res = await fetch(`${base}/products/id/${encodeURIComponent(productId.trim())}`);
-    } catch (err) {
-      throw new Error(
-        `API /products/id/${productId} is unreachable: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`API /products/id/${productId} failed (${res.status})`);
-    return res.json() as Promise<Product>;
-  }
-
-  private recalculateCart(cart: Cart): void {
-    cart.totalQuantity = cart.lines.reduce((sum, line) => sum + line.quantity, 0);
-    cart.subtotal = cart.lines.reduce(
-      (sum, line) => sum + line.variant.price * line.quantity,
-      0
+    return apiRequest<Cart>(
+      `/carts/${encodeURIComponent(cartId)}/items/${encodeURIComponent(lineId)}`,
+      { method: 'DELETE' }
     );
   }
 }

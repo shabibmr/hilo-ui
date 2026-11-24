@@ -8,6 +8,7 @@ import { ShoppingBag, Plus, Minus, Trash2 } from 'lucide-react';
 import { CtaButton } from '../common/cta-button';
 import { DoubleBezel } from '../common/double-bezel';
 import { collectionHref } from '@/lib/links';
+import { formatCurrency } from '@/lib/format/currency';
 
 export const CartDrawer: React.FC = () => {
   const { cart, isOpen, closeCart, updateQuantity, removeItem } = useCartStore();
@@ -122,7 +123,7 @@ export const CartDrawer: React.FC = () => {
                         </div>
 
                         <span className="font-display text-sm font-medium text-wine">
-                          ₹{line.variant.price * line.quantity}
+                          {formatCurrency(line.variant.price * line.quantity, line.product.currencyCode)}
                         </span>
                       </div>
                     </div>
@@ -136,7 +137,7 @@ export const CartDrawer: React.FC = () => {
             <div className="p-6 bg-white/80 ring-1 ring-inset ring-wine/5 space-y-4">
               <div className="flex justify-between items-center text-base">
                 <span className="font-body text-wine/70">Subtotal</span>
-                <span className="font-display font-semibold text-xl text-wine">₹{subtotal}</span>
+                <span className="font-display font-semibold text-xl text-wine">{formatCurrency(subtotal, cart?.currencyCode)}</span>
               </div>
               <p className="text-[11px] text-wine/50 text-center font-light">
                 Taxes and shipping calculated at checkout.

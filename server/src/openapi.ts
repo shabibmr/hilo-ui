@@ -2,10 +2,10 @@
 export const openApiDocument = {
   openapi: '3.0.3',
   info: {
-    title: 'Hilo Arte Storefront Read API',
+    title: 'Hilo Arte Storefront API',
     version: '1.0.0',
     description:
-      'Published catalog, site settings, and enquiries. Admin, checkout, and webhooks are separate routes under the same /api/v1 mount.',
+      'Published catalog, site settings, persistent carts, checkout, and enquiries. Admin and webhooks are also mounted under /api/v1.',
   },
   servers: [{ url: '/api/v1' }],
   paths: {
@@ -145,6 +145,28 @@ export const openApiDocument = {
           '429': { description: 'Rate limited' },
         },
       },
+    },
+    '/carts': {
+      post: { summary: 'Create or restore a persistent anonymous cart', responses: { '201': { description: 'Cart identifier' }, '400': { description: 'Invalid cart identifier' } } },
+    },
+    '/carts/{cartId}': {
+      get: { summary: 'Retrieve a current server-priced cart', parameters: [{ name: 'cartId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Cart with current catalog prices' }, '404': { description: 'Cart expired or not found' } } },
+    },
+    '/carts/{cartId}/items': {
+      post: { summary: 'Add a product to a cart', parameters: [{ name: 'cartId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Updated cart' }, '409': { description: 'Stock or cart validation failed' } } },
+    },
+    '/carts/{cartId}/items/{lineId}': {
+      patch: { summary: 'Set cart line quantity (zero removes the line)', parameters: [{ name: 'cartId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }, { name: 'lineId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Updated cart' }, '409': { description: 'Stock or cart validation failed' } } },
+      delete: { summary: 'Remove a cart line', parameters: [{ name: 'cartId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }, { name: 'lineId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Updated cart' } } },
+    },
+    '/checkout/orders': {
+      post: { summary: 'Create an order and Razorpay payment session', responses: { '201': { description: 'Order and gateway session created' }, '400': { description: 'Invalid checkout details' }, '409': { description: 'Stock or order validation failed' }, '502': { description: 'Payment gateway error' } } },
+    },
+    '/checkout/orders/{orderId}/cancel': {
+      post: { summary: 'Cancel a pending checkout and release its stock reservation', parameters: [{ name: 'orderId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Order cancelled' }, '409': { description: 'Order is not cancellable' } } },
+    },
+    '/checkout/orders/{orderId}/status': {
+      get: { summary: 'Read the public payment and order status', parameters: [{ name: 'orderId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Minimal payment status; no customer data' }, '404': { description: 'Order not found' } } },
     },
     '/openapi.json': {
       get: {
