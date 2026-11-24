@@ -309,70 +309,103 @@ async function loadOrder(orderId: string) {
   return data;
 }
 
-/** Port of supabase/functions/refund-order. */
+/** Refund only after Razorpay confirms a real refund. */
 router.post('/admin/orders/:id/refund', wrap(async (req, res) => {
   const order = await loadOrder(id(req));
-  if (order.status === 'refunded') throw new HttpError(400, 'Order has already been refunded.');
   if (!['paid', 'shipped', 'delivered'].includes(order.status)) {
     throw new HttpError(400, `Cannot refund order with status "${order.status}".`);
   }
+  if (!order.razorpay_payment_id) {
+    throw new HttpError(409, 'Order has no captured Razorpay payment to refund.');
+  }
 
-  let refundId = `rfnd_mock_${Date.now().toString().slice(-8)}`;
   const auth = rzpAuth();
-  if (auth && order.razorpay_payment_id) {
-    const r = await fetch(`https://api.razorpay.com/v1/payments/${order.razorpay_payment_id}/refund`, {
+  if (!auth) throw new HttpError(503, 'Razorpay refund credentials are not configured.');
+
+  const r = await fetch(
+    `https://api.razorpay.com/v1/payments/${encodeURIComponent(order.razorpay_payment_id)}/refund`,
+    {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: auth },
       body: JSON.stringify({ speed: 'optimum', notes: { order_id: order.id } }),
-    });
-    if (!r.ok) {
-      console.error('Razorpay refund failed:', await r.text());
-      throw new HttpError(502, 'Razorpay refund failed.');
+      signal: AbortSignal.timeout(15_000),
     }
-    refundId = ((await r.json()) as { id: string }).id;
+  );
+  if (!r.ok) {
+    const detail = await r.text();
+    console.error('Razorpay refund failed:', detail);
+    throw new HttpError(502, 'Razorpay refund was not confirmed.');
   }
 
-  await setStatus(order.id, 'refunded'); // also restocks
-  await supabase
-    .from('orders')
-    .update({ refund_id: refundId, refunded_at: new Date().toISOString() })
-    .eq('id', order.id);
-  res.json({ success: true, orderId: order.id, refundId, status: 'refunded' });
+  const gatewayRefund = (await r.json()) as { id?: string; status?: string };
+  if (!gatewayRefund.id || !['pending', 'processed'].includes(gatewayRefund.status ?? '')) {
+    throw new HttpError(502, 'Razorpay returned an invalid refund confirmation.');
+  }
+
+  // One database transaction records the refund and restocks the order.
+  const { data, error } = await supabase.rpc('finalize_order_refund', {
+    p_order: order.id,
+    p_refund_id: gatewayRefund.id,
+  });
+  check(error);
+  res.json({ success: true, orderId: order.id, refundId: gatewayRefund.id, status: data?.status ?? 'refunded' });
 }));
 
-/** Port of supabase/functions/verify-payment: reconcile a stuck pending order. */
+/** Reconcile a pending order against Razorpay; amount and currency must match. */
 router.post('/admin/orders/:id/verify-payment', wrap(async (req, res) => {
   const order = await loadOrder(id(req));
   if (['paid', 'shipped', 'delivered'].includes(order.status)) {
     return res.json({ verified: true, status: order.status, message: 'Order is already marked as paid.' });
   }
+  if (order.status !== 'pending') {
+    throw new HttpError(409, `Cannot verify payment for an order in status "${order.status}".`);
+  }
 
   const auth = rzpAuth();
-  if (auth && order.razorpay_order_id) {
-    const r = await fetch(`https://api.razorpay.com/v1/orders/${order.razorpay_order_id}/payments`, {
-      headers: { Authorization: auth },
-    });
-    if (!r.ok) {
-      console.error('Razorpay lookup failed:', await r.text());
-      throw new HttpError(502, 'Razorpay API lookup failed.');
-    }
-    const items = ((await r.json()) as { items?: Array<{ id: string; status: string }> }).items;
-    const captured = items?.find((p) => p.status === 'captured');
-    if (captured) {
-      await supabase.from('orders').update({ razorpay_payment_id: captured.id }).eq('id', order.id);
-      await setStatus(order.id, 'paid');
-      return res.json({
-        verified: true,
-        status: 'paid',
-        paymentId: captured.id,
-        message: 'Payment found and confirmed! Order marked as paid.',
-      });
-    }
+  if (!auth || !order.razorpay_order_id) {
+    throw new HttpError(503, 'Razorpay payment verification is not configured for this order.');
   }
-  res.json({
-    verified: false,
-    status: order.status,
-    message: 'No captured payment found on Razorpay for this order.',
+  const r = await fetch(
+    `https://api.razorpay.com/v1/orders/${encodeURIComponent(order.razorpay_order_id)}/payments`,
+    { headers: { Authorization: auth }, signal: AbortSignal.timeout(10_000) }
+  );
+  if (!r.ok) {
+    console.error('Razorpay lookup failed:', await r.text());
+    throw new HttpError(502, 'Razorpay API lookup failed.');
+  }
+  const items = ((await r.json()) as {
+    items?: Array<{ id: string; status: string; amount: number; currency: string; order_id: string }>;
+  }).items ?? [];
+  const expectedAmount = Math.round(Number(order.subtotal) * 100);
+  const captured = items.find((p) =>
+    p.status === 'captured' &&
+    p.order_id === order.razorpay_order_id &&
+    p.amount === expectedAmount &&
+    p.currency === order.currency_code
+  );
+  if (!captured) {
+    return res.json({
+      verified: false,
+      status: order.status,
+      message: 'No captured payment matching this order amount and currency was found.',
+    });
+  }
+
+  const { data, error } = await supabase.rpc('process_razorpay_payment', {
+    p_event_id: `admin-reconcile:${captured.id}`,
+    p_event_type: 'admin.payment.reconciled',
+    p_razorpay_order_id: order.razorpay_order_id,
+    p_payment_id: captured.id,
+    p_amount_paise: captured.amount,
+    p_currency: captured.currency,
+    p_payment_status: captured.status,
+  });
+  check(error);
+  return res.json({
+    verified: true,
+    status: data?.status === 'duplicate' ? 'paid' : 'paid',
+    paymentId: captured.id,
+    message: 'Payment matched Razorpay and the order was reconciled.',
   });
 }));
 
