@@ -12,12 +12,12 @@ import { CheckCircle2, Clock3, AlertCircle, RefreshCw } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api-url';
 import { useCartStore } from '@/lib/cart/cart-store';
 
-type PaymentStatus = 'checking' | 'pending' | 'captured' | 'failed' | 'refunded' | 'error';
+type PaymentStatus = 'checking' | 'pending' | 'captured' | 'failed' | 'refund_pending' | 'refunded' | 'error';
 
 interface PaymentStatusResponse {
   orderId: string;
   orderStatus: string;
-  paymentStatus: 'pending' | 'captured' | 'failed' | 'refunded';
+  paymentStatus: 'pending' | 'captured' | 'failed' | 'refund_pending' | 'refunded';
 }
 
 function ConfirmationBody() {
@@ -49,7 +49,7 @@ function ConfirmationBody() {
         setLastChecked(new Date());
         setStatus(result.paymentStatus);
         if (result.paymentStatus === 'captured') clearCart();
-        if (result.paymentStatus === 'pending') {
+        if (result.paymentStatus === 'pending' || result.paymentStatus === 'refund_pending') {
           if (Date.now() - startedAt < 90_000) timer = setTimeout(checkStatus, 2500);
           else setPollingTimedOut(true);
         }
@@ -88,6 +88,7 @@ function ConfirmationBody() {
   const isPaid = status === 'captured';
   const isFailed = status === 'failed';
   const isRefunded = status === 'refunded';
+  const isRefundPending = status === 'refund_pending';
   const isPending = status === 'checking' || status === 'pending';
 
   return (
@@ -101,6 +102,7 @@ function ConfirmationBody() {
       <span className="text-eyebrow text-xs tracking-[0.25em] text-gold font-accent block">
         {isPaid ? '— PAYMENT CONFIRMED —' :
           isRefunded ? '— PAYMENT REFUNDED —' :
+          isRefundPending ? '— REFUND INITIATED —' :
           isFailed ? '— PAYMENT NOT COMPLETED —' :
           isPending ? '— CONFIRMING PAYMENT —' : '— ORDER STATUS —'}
       </span>
@@ -108,6 +110,7 @@ function ConfirmationBody() {
       <h1 className="font-display text-h1 text-wine">
         {isPaid ? 'Your order is confirmed.' :
           isRefunded ? 'Your payment has been refunded.' :
+          isRefundPending ? 'Your payment is being refunded.' :
           isFailed ? 'Your payment was not completed.' :
           isPending ? 'Your payment is being confirmed.' : 'We could not verify your payment yet.'}
       </h1>
@@ -117,6 +120,8 @@ function ConfirmationBody() {
           ? 'Thank you for starting your embroidery journey with HILO ARTE. We have confirmed your payment and are preparing your order.'
           : isRefunded
             ? 'The payment arrived after the order was cancelled, so it has been sent for refund. Please contact us if you need assistance.'
+            : isRefundPending
+              ? 'A refund request has been accepted and is being processed by the payment provider.'
             : isFailed
               ? 'The order reservation has expired or was cancelled. If your bank shows a debit, contact us with your order reference.'
               : isPending
@@ -129,16 +134,16 @@ function ConfirmationBody() {
         {lastChecked && <><br />Last checked: {lastChecked.toLocaleTimeString()}</>}
       </p>
 
-      {isPending && !pollingTimedOut && (
+      {(isPending || isRefundPending) && !pollingTimedOut && (
         <div className="flex items-center justify-center gap-2 text-xs text-wine/55" role="status" aria-live="polite">
           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
           Checking payment status…
         </div>
       )}
 
-      {isPending && pollingTimedOut && (
+      {(isPending || isRefundPending) && pollingTimedOut && (
         <p role="status" className="text-sm text-wine/60">
-          Payment is still pending. Check again shortly; do not submit another payment for this order.
+          {isRefundPending ? 'Your refund is still processing. Check again shortly.' : 'Payment is still pending. Check again shortly; do not submit another payment for this order.'}
         </p>
       )}
 
