@@ -19,11 +19,11 @@ router.post(
     if (!str(addr?.line1) || !str(addr?.city)) {
       return res.status(400).json({ error: 'Incomplete delivery shipping address.' });
     }
-    if (!Array.isArray(items) || items.length === 0) {
+    if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
       return res.status(400).json({ error: 'Order must contain at least one item.' });
     }
     for (const it of items) {
-      if (!str(it?.productId) || typeof it.quantity !== 'number' || it.quantity < 1) {
+      if (!str(it?.productId) || typeof it.quantity !== 'number' || !Number.isSafeInteger(it.quantity) || it.quantity < 1) {
         return res.status(400).json({ error: 'Invalid product or quantity in line items.' });
       }
     }
@@ -44,7 +44,7 @@ router.post(
       },
       p_items: items.map((it: { productId: string; quantity: number }) => ({
         product_id: it.productId,
-        quantity: Math.floor(it.quantity),
+        quantity: it.quantity,
       })),
       p_razorpay_order_id: null,
     });
@@ -67,6 +67,7 @@ router.post(
           receipt: `rcpt_${orderId.slice(0, 10)}`,
           notes: { hilo_order_id: orderId, customer_email: str(customer.email) },
         }),
+        signal: AbortSignal.timeout(10_000),
       });
       if (!rzp.ok) {
         console.error('Razorpay order creation failed:', await rzp.text());
@@ -74,7 +75,11 @@ router.post(
         await supabase.rpc('set_order_status', { p_order: orderId, p_status: 'cancelled' });
         return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
       }
-      razorpayOrderId = ((await rzp.json()) as { id: string }).id;
+      const gatewayOrder = (await rzp.json()) as { id?: string; amount?: number; currency?: string };
+      if (!gatewayOrder.id || gatewayOrder.amount !== amount || gatewayOrder.currency !== 'INR') {
+        throw new Error('Razorpay returned an invalid order confirmation.');
+      }
+      razorpayOrderId = gatewayOrder.id;
     } catch (err) {
       console.error('Razorpay order creation failed:', err);
       // Release the reserved stock.
@@ -82,7 +87,19 @@ router.post(
       return res.status(502).json({ error: 'Failed to initiate gateway payment session.' });
     }
 
-    await supabase.from('orders').update({ razorpay_order_id: razorpayOrderId }).eq('id', orderId);
+    const { error: linkError } = await supabase
+      .from('orders')
+      .update({ razorpay_order_id: razorpayOrderId })
+      .eq('id', orderId);
+    if (linkError) {
+      console.error('Could not link Razorpay order to internal order:', linkError.message);
+      const { error: releaseError } = await supabase.rpc('set_order_status', {
+        p_order: orderId,
+        p_status: 'cancelled',
+      });
+      if (releaseError) console.error('Could not release stock after checkout linking failure:', releaseError.message);
+      return res.status(500).json({ error: 'Could not finalize checkout. Please contact support before retrying payment.' });
+    }
 
     res.json({
       success: true,
