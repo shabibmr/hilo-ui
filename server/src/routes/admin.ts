@@ -341,8 +341,18 @@ router.post('/admin/orders/:id/refund', wrap(async (req, res) => {
   if (!gatewayRefund.id || !['pending', 'processed'].includes(gatewayRefund.status ?? '')) {
     throw new HttpError(502, 'Razorpay returned an invalid refund confirmation.');
   }
+  // A pending gateway refund is not a completed refund: do not restock or change order status.
+  if (gatewayRefund.status !== 'processed') {
+    return res.status(202).json({
+      success: false,
+      pending: true,
+      orderId: order.id,
+      refundId: gatewayRefund.id,
+      message: 'Razorpay accepted the refund request, but it is not yet processed. Reconcile this refund before retrying.',
+    });
+  }
 
-  // One database transaction records the refund and restocks the order.
+  // One database transaction records the confirmed refund and restocks the order.
   const { data, error } = await supabase.rpc('finalize_order_refund', {
     p_order: order.id,
     p_refund_id: gatewayRefund.id,
