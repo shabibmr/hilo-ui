@@ -142,7 +142,6 @@ export class ApiCommerceRepository implements CommerceRepository {
     productId: string,
     variantId: string,
     quantity: number,
-    _existingCart?: Cart | null
   ): Promise<Cart> {
     if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 20) {
       throw new Error('Quantity must be a whole number between 1 and 20.');
