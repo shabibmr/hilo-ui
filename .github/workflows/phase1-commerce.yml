@@ -14,6 +14,10 @@ on:
   push:
     branches: [fix/phase-1-commerce-stability]
 
+concurrency:
+  group: phase1-commerce-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   storefront:
     name: Storefront lint and production build
