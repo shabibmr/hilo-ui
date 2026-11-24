@@ -8,12 +8,13 @@ import { Footer } from '@/components/layout/footer';
 import { Container } from '@/components/common/container';
 import { CtaButton } from '@/components/common/cta-button';
 import { placeOrder, formatCustomerName, type CheckoutCustomer } from '@/lib/checkout/place-order';
-import { ShieldCheck, CreditCard, Smartphone, ShoppingBag } from 'lucide-react';
+import { ShieldCheck, ShoppingBag } from 'lucide-react';
 import { collectionHref } from '@/lib/links';
+import { formatCurrency } from '@/lib/format/currency';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, initializeCart, clearCart } = useCartStore();
+  const { cart, initializeCart } = useCartStore();
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -21,7 +22,6 @@ export default function CheckoutPage() {
   useEffect(() => {
     initializeCart();
   }, [initializeCart]);
-  const [paymentMethod, setPaymentMethod] = useState('upi');
 
   const subtotal = cart?.subtotal || 0;
   const isEmpty = !cart?.lines || cart.lines.length === 0;
@@ -51,7 +51,6 @@ export default function CheckoutPage() {
     setErrorMsg(null);
     try {
       const orderId = await placeOrder(cart, customer);
-      clearCart();
       router.push(`/checkout/confirmation/?order=${encodeURIComponent(orderId)}`);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -207,34 +206,12 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Payment Selection */}
-                <div className="space-y-4 pt-4 border-t border-wine/10">
-                  <h3 className="font-display text-xl text-wine font-medium">3. Payment Method</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-3 p-4 border border-wine/20 rounded-lg cursor-pointer bg-cream/30">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value="upi"
-                        checked={paymentMethod === 'upi'}
-                        onChange={() => setPaymentMethod('upi')}
-                      />
-                      <Smartphone className="w-5 h-5 text-gold" />
-                      <span className="font-body text-sm font-medium">UPI / GPay / PhonePe / Paytm</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 p-4 border border-wine/20 rounded-lg cursor-pointer bg-cream/30">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value="card"
-                        checked={paymentMethod === 'card'}
-                        onChange={() => setPaymentMethod('card')}
-                      />
-                      <CreditCard className="w-5 h-5 text-gold" />
-                      <span className="font-body text-sm font-medium">Credit / Debit Cards / Netbanking</span>
-                    </label>
-                  </div>
+                {/* Razorpay presents only the payment methods enabled for this merchant account. */}
+                <div className="space-y-2 pt-4 border-t border-wine/10">
+                  <h3 className="font-display text-xl text-wine font-medium">3. Secure Payment</h3>
+                  <p className="text-sm text-wine/65">
+                    Available payment options will be displayed securely in the Razorpay checkout window.
+                  </p>
                 </div>
 
                 {errorMsg && (
@@ -263,7 +240,7 @@ export default function CheckoutPage() {
                           <p className="font-medium text-wine">{line.product.title}</p>
                           <p className="text-wine/60">Qty: {line.quantity}</p>
                         </div>
-                        <span className="font-semibold text-wine">₹{line.variant.price * line.quantity}</span>
+                        <span className="font-semibold text-wine">{formatCurrency(line.variant.price * line.quantity, line.product.currencyCode)}</span>
                       </div>
                     ))}
                   </div>
@@ -271,7 +248,7 @@ export default function CheckoutPage() {
                   <div className="border-t border-wine/10 pt-4 space-y-2 text-sm">
                     <div className="flex justify-between text-wine/70">
                       <span>Subtotal (preview)</span>
-                      <span>₹{subtotal}</span>
+                      <span>{formatCurrency(subtotal, cart?.currencyCode)}</span>
                     </div>
                   </div>
                 </div>

@@ -6,6 +6,7 @@ import { openApiDocument } from './openapi.js';
 import catalog from './routes/catalog.js';
 import admin from './routes/admin.js';
 import checkout from './routes/checkout.js';
+import carts from './routes/carts.js';
 import content from './routes/content.js';
 import webhooks from './routes/webhooks.js';
 import { supabase } from './supabase.js';
@@ -41,6 +42,7 @@ v1.get('/openapi.json', (_req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=300');
   res.json(openApiDocument);
 });
+v1.use('/carts', carts);
 v1.use(catalog);
 v1.use(content);
 v1.use(checkout);
