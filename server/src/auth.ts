@@ -7,23 +7,23 @@ import { supabase } from './supabase.js';
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   void verifyAdmin(req, res).then(
-    () => next(),
+    (authorized) => { if (authorized) next(); },
     (error: unknown) => next(error)
   );
 }
 
-async function verifyAdmin(req: Request, res: Response): Promise<void> {
+async function verifyAdmin(req: Request, res: Response): Promise<boolean> {
   const header = req.header('authorization') ?? '';
   const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
   if (!token) {
     res.status(401).json({ error: 'Missing bearer token' });
-    return;
+    return false;
   }
 
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) {
     res.status(401).json({ error: 'Invalid or expired token' });
-    return;
+    return false;
   }
 
   const admins = (process.env.ADMIN_USER_IDS || '')
@@ -32,5 +32,7 @@ async function verifyAdmin(req: Request, res: Response): Promise<void> {
     .filter(Boolean);
   if (!admins.includes(data.user.id)) {
     res.status(403).json({ error: 'Not authorised' });
+    return false;
   }
+  return true;
 }
