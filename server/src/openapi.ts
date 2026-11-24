@@ -162,6 +162,9 @@ export const openApiDocument = {
     '/checkout/orders': {
       post: { summary: 'Create an order and Razorpay payment session', responses: { '201': { description: 'Order and gateway session created' }, '400': { description: 'Invalid checkout details' }, '409': { description: 'Stock or order validation failed' }, '502': { description: 'Payment gateway error' } } },
     },
+    '/checkout/orders/{orderId}/cancel': {
+      post: { summary: 'Cancel a pending checkout and release its stock reservation', parameters: [{ name: 'orderId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Order cancelled' }, '409': { description: 'Order is not cancellable' } } },
+    },
     '/checkout/orders/{orderId}/status': {
       get: { summary: 'Read the public payment and order status', parameters: [{ name: 'orderId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }], responses: { '200': { description: 'Minimal payment status; no customer data' }, '404': { description: 'Order not found' } } },
     },
