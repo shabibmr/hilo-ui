@@ -15,7 +15,7 @@ router.get('/checkout/orders/:orderId/status', rateLimit(60, 60_000), wrap(async
 
   const { data: order, error } = await supabase
     .from('orders')
-    .select('id, status, razorpay_payment_id, created_at')
+    .select('id, status, razorpay_payment_id, refund_id, created_at')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -30,9 +30,11 @@ router.get('/checkout/orders/:orderId/status', rateLimit(60, 60_000), wrap(async
 
   const paymentStatus = order.status === 'refunded'
     ? 'refunded'
-    : Boolean(order.razorpay_payment_id) || ['paid', 'shipped', 'delivered'].includes(order.status)
-      ? 'captured'
-      : order.status === 'cancelled' ? 'failed' : 'pending';
+    : order.refund_id
+      ? 'refund_pending'
+      : Boolean(order.razorpay_payment_id) || ['paid', 'shipped', 'delivered'].includes(order.status)
+        ? 'captured'
+        : order.status === 'cancelled' ? 'failed' : 'pending';
 
   res.setHeader('Cache-Control', 'no-store');
   res.json({
