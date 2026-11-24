@@ -45,6 +45,46 @@ router.get('/checkout/orders/:orderId/status', rateLimit(60, 60_000), wrap(async
   });
 }));
 
+router.post('/checkout/orders/:orderId/cancel', rateLimit(20, 60_000), wrap(async (req, res) => {
+  const orderId = str(req.params.orderId);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId)) {
+    sendError(res, 400, 'VALIDATION_ERROR', 'Invalid order id.');
+    return;
+  }
+
+  const { data: order, error: lookupError } = await supabase
+    .from('orders')
+    .select('id, status')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (lookupError) {
+    sendError(res, 500, 'DB_ERROR', 'Unable to retrieve order.');
+    return;
+  }
+  if (!order) {
+    sendError(res, 404, 'NOT_FOUND', 'Order not found.');
+    return;
+  }
+  if (order.status === 'cancelled') {
+    res.json({ orderId, status: 'cancelled' });
+    return;
+  }
+  if (order.status !== 'pending') {
+    sendError(res, 409, 'ORDER_NOT_CANCELLABLE', 'This order can no longer be cancelled from checkout.');
+    return;
+  }
+
+  const { error: cancelError } = await supabase.rpc('set_order_status', {
+    p_order: orderId,
+    p_status: 'cancelled',
+  });
+  if (cancelError) {
+    sendError(res, 409, 'ORDER_CANCEL_FAILED', cancelError.message);
+    return;
+  }
+  res.json({ orderId, status: 'cancelled' });
+}));
+
 /** Prices and stock are calculated and reserved in the database, never from client values. */
 router.post(
   '/checkout/orders',
