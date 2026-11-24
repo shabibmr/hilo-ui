@@ -304,3 +304,31 @@ revoke all on function public.create_order_atomic(jsonb, jsonb, text) from publi
 revoke all on function public.release_expired_pending_orders() from public, anon, authenticated;
 grant execute on function public.create_order_atomic(jsonb, jsonb, text) to service_role;
 grant execute on function public.release_expired_pending_orders() to service_role;
+
+
+-- Invoice issuance is restricted to paid orders. The function remains idempotent.
+create or replace function public.ensure_invoice(p_order uuid)
+returns public.invoices
+language plpgsql
+set search_path = public, pg_temp
+as $$
+declare
+  inv public.invoices;
+  ord public.orders;
+begin
+  select * into ord from public.orders where id = p_order for update;
+  if not found then raise exception 'Order not found'; end if;
+  if ord.status not in ('paid', 'shipped', 'delivered', 'refunded') then
+    raise exception 'An invoice can only be issued for a paid order';
+  end if;
+  select * into inv from public.invoices where order_id = p_order;
+  if found then return inv; end if;
+  insert into public.invoices(order_id, tax_total, total)
+    values (p_order, 0, ord.subtotal)
+    on conflict (order_id) do nothing;
+  select * into inv from public.invoices where order_id = p_order;
+  return inv;
+end;
+$$;
+revoke all on function public.ensure_invoice(uuid) from public, anon, authenticated;
+grant execute on function public.ensure_invoice(uuid) to service_role;
