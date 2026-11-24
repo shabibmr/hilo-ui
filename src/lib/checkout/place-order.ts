@@ -25,7 +25,6 @@ interface CreateOrderResponse {
 
 interface RazorpayInstance {
   open: () => void;
-  on: (event: 'payment.failed', handler: (res: { error?: { description?: string } }) => void) => void;
 }
 
 declare global {
@@ -34,9 +33,21 @@ declare global {
   }
 }
 
+async function cancelPendingOrder(orderId: string): Promise<void> {
+  try {
+    await fetch(`${getApiBaseUrl()}/api/v1/checkout/orders/${encodeURIComponent(orderId)}/cancel`, {
+      method: 'POST',
+      cache: 'no-store',
+      keepalive: true,
+    });
+  } catch {
+    // The scheduled pending-order expiry remains the fallback if the browser goes offline.
+  }
+}
+
 export class PaymentCancelled extends Error {
   constructor() {
-    super('Payment was not completed. Your items stay reserved for 15 minutes.');
+    super('Checkout was closed before payment completed. Your basket is still available.');
   }
 }
 
@@ -126,11 +137,13 @@ export async function placeOrder(cart: Cart, customer: CheckoutCustomer): Promis
       // The browser callback only advances to the pending screen. The backend
       // webhook and status endpoint remain the source of truth for payment success.
       handler: () => resolve(order.orderId!),
-      modal: { ondismiss: () => reject(new PaymentCancelled()) },
+      retry: { enabled: true },
+      modal: {
+        ondismiss: () => {
+          void cancelPendingOrder(order.orderId!).finally(() => reject(new PaymentCancelled()));
+        },
+      },
     });
-    rzp.on('payment.failed', (result) =>
-      reject(new Error(result.error?.description || 'Payment failed. Please try again.'))
-    );
     rzp.open();
   });
 }
