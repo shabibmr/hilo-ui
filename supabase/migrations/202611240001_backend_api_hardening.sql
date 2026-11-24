@@ -65,7 +65,7 @@ begin
 
   if not (
     (prev = 'pending' and p_status in ('paid', 'cancelled')) or
-    (prev = 'paid' and p_status in ('shipped', 'cancelled')) or
+    (prev = 'paid' and p_status = 'shipped') or
     (prev = 'shipped' and p_status = 'delivered')
   ) then
     raise exception 'Invalid order status transition: % -> %', prev, p_status;
